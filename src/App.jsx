@@ -2,6 +2,8 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './Login';
 import Dashboard from './Dashboard';
+import Cadastros from './pages/Cadastros';
+import Produtos from './pages/Produtos';
 import './App.css';
 
 function App() {
@@ -10,6 +12,8 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/cadastros" element={<Cadastros />} />
+        <Route path="/produtos" element={<Produtos />} />
         <Route path="/" element={<Navigate to="/login" />} />
       </Routes>
     </Router>

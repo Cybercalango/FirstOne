@@ -39,13 +39,13 @@ function Dashboard() {
         <div className="menu-grid">
           {(userRole === 'administrador' || userRole === 'gerente') && (
             <>
-              <div className="menu-item">
-                <h3>📦 Estoque</h3>
-                <p>Gerenciar produtos em estoque</p>
+              <div className="menu-item clickable" onClick={() => navigate('/produtos')}>
+                <h3>📦 Produtos / Estoque</h3>
+                <p>Cadastrar modelos, peças, variantes e consignação</p>
               </div>
-              <div className="menu-item">
-                <h3>🤝 Consignação</h3>
-                <p>Produtos em consignação</p>
+              <div className="menu-item clickable" onClick={() => navigate('/cadastros')}>
+                <h3>🗂️ Cadastros Base</h3>
+                <p>Variantes, tipos, grades de tamanho, clientes e vendedores</p>
               </div>
             </>
           )}
