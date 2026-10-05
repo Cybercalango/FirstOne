@@ -4,6 +4,7 @@ import Login from './Login';
 import Dashboard from './Dashboard';
 import Cadastros from './pages/Cadastros';
 import Produtos from './pages/Produtos';
+import Usuarios from './pages/Usuarios';
 import './App.css';
 
 function App() {
@@ -14,6 +15,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/cadastros" element={<Cadastros />} />
         <Route path="/produtos" element={<Produtos />} />
+        <Route path="/usuarios" element={<Usuarios />} />
         <Route path="/" element={<Navigate to="/login" />} />
       </Routes>
     </Router>

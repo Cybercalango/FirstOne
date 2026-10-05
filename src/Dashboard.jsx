@@ -51,9 +51,9 @@ function Dashboard() {
           )}
 
           {userRole === 'administrador' && (
-            <div className="menu-item">
+            <div className="menu-item clickable" onClick={() => navigate('/usuarios')}>
               <h3>⚙️ Administração</h3>
-              <p>Configurações e usuários</p>
+              <p>Criar logins, alterar senhas e níveis de acesso</p>
             </div>
           )}
 
