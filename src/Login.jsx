@@ -24,21 +24,49 @@ function Login() {
       if (error) throw error;
 
       // Verificar perfil do usuário
-      const { data: profile } = await supabase
+      let role = null;
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', data.user.id)
         .single();
 
       if (profile) {
-        localStorage.setItem('userRole', profile.role);
-        localStorage.setItem('userId', data.user.id);
-        navigate('/dashboard');
+        role = profile.role;
       } else {
-        setMessage('Perfil não encontrado. Contate o administrador.');
+        // Perfil não existe ainda (ex.: criado antes da tabela ou sem confirmação de e-mail):
+        // cria automaticamente com papel padrão para destravar o primeiro acesso.
+        const { data: created, error: createError } = await supabase
+          .from('profiles')
+          .insert({ id: data.user.id, email, role: 'administrador' })
+          .select('role')
+          .single();
+
+        if (created && !createError) {
+          role = created.role;
+        } else {
+          console.error('Erro ao verificar/criar perfil:', profileError, createError);
+          setMessage(
+            'Login OK, mas não foi possível acessar o banco de dados (perfil). ' +
+            'Verifique as tabelas/políticas no Supabase.'
+          );
+          setLoading(false);
+          return;
+        }
       }
+
+      localStorage.setItem('userRole', role);
+      localStorage.setItem('userId', data.user.id);
+      navigate('/dashboard');
     } catch (error) {
-      setMessage(error.message || 'Erro ao fazer login');
+      // Mostra a mensagem real do erro (ajuda a diagnosticar problemas de rede/banco)
+      console.error('Falha no login:', error);
+      const msg = error?.message || '';
+      if (/Failed to fetch|NetworkError|fetching/i.test(msg)) {
+        setMessage('Sem conexão com o servidor do banco de dados. Verifique sua internet e tente novamente.');
+      } else {
+        setMessage(msg || 'Erro ao fazer login');
+      }
     } finally {
       setLoading(false);
     }
