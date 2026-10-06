@@ -5,6 +5,8 @@ import Dashboard from './Dashboard';
 import Cadastros from './pages/Cadastros';
 import Produtos from './pages/Produtos';
 import Usuarios from './pages/Usuarios';
+import Consignacoes from './pages/Consignacoes';
+import Movimentacoes from './pages/Movimentacoes';
 import './App.css';
 
 function App() {
@@ -16,6 +18,8 @@ function App() {
         <Route path="/cadastros" element={<Cadastros />} />
         <Route path="/produtos" element={<Produtos />} />
         <Route path="/usuarios" element={<Usuarios />} />
+        <Route path="/consignacoes" element={<Consignacoes />} />
+        <Route path="/movimentacoes" element={<Movimentacoes />} />
         <Route path="/" element={<Navigate to="/login" />} />
       </Routes>
     </Router>

@@ -66,7 +66,7 @@ function Dashboard() {
             <>
               <div className="menu-item clickable" onClick={() => navigate('/produtos')}>
                 <h3>📦 Produtos / Estoque</h3>
-                <p>Cadastrar modelos, peças, variantes e consignação</p>
+                <p>Cadastrar modelos, peças, variantes e preços</p>
               </div>
               <div className="menu-item clickable" onClick={() => navigate('/cadastros')}>
                 <h3>🗂️ Cadastros Base</h3>
@@ -79,6 +79,20 @@ function Dashboard() {
             <div className="menu-item clickable" onClick={() => navigate('/usuarios')}>
               <h3>⚙️ Administração</h3>
               <p>Criar logins, alterar senhas e níveis de acesso</p>
+            </div>
+          )}
+
+          {(userRole === 'administrador' || userRole === 'gerente') && (
+            <div className="menu-item clickable" onClick={() => navigate('/consignacoes')}>
+              <h3>🤝 Consignações</h3>
+              <p>Remessa de peças a parceiros, devoluções e prazos</p>
+            </div>
+          )}
+
+          {(userRole === 'administrador' || userRole === 'gerente') && (
+            <div className="menu-item clickable" onClick={() => navigate('/movimentacoes')}>
+              <h3>🔄 Entrada / Saída de Estoque</h3>
+              <p>Movimentações, empréstimos e devoluções internas</p>
             </div>
           )}
 
