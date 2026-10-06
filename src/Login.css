@@ -59,3 +59,30 @@
   color: #e74c3c;
   margin-top: 1rem;
 }
+
+.toggle-link {
+  margin-top: 16px;
+  font-size: 0.9rem;
+  color: #666;
+  text-align: center;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: #b8860b;
+  cursor: pointer;
+  font-size: 0.9rem;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.link-btn:hover {
+  color: #8b6508;
+}
+
+.login-box h2 {
+  font-size: 1.1rem;
+  margin-bottom: 12px;
+  color: #444;
+}
