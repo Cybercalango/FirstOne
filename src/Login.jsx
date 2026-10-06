@@ -118,10 +118,15 @@ function Login() {
       if (profile) {
         role = profile.role;
       } else {
-        // O perfil pode existir, mas estar invisível por causa das políticas RLS.
-        // Se este for o ÚNICO usuário do sistema, ele é o primeiro administrador:
-        // a tela "Criar conta de administrador" só aparece quando não há usuários.
-        let isSoleUser = false;
+        // O perfil não apareceu: pode (a) realmente não existir, ou
+        // (b) existir mas estar invisível/bloqueado pelas políticas RLS.
+        // Estratégia: tentar criar/promover o perfil automaticamente.
+        // - Se a pessoa é o ÚNICO usuário do sistema, ela se torna o
+        //   primeiro administrador (bootstrap de segurança).
+        // - Se já existem outros usuários, o insert é bloqueado pela RLS
+        //   (somente administradores podem gravar em profiles), então a
+        //   tentativa falha com segurança e pedimos ajuda de um admin.
+        let soleUserCheckFailed = true; // assume "pode ser o único" se a checagem falhar
         try {
           const resp = await fetch(
             `${SUPABASE_URL}/auth/v1/admin/users?page=1&per_page=2`,
@@ -130,22 +135,37 @@ function Login() {
           if (resp.ok) {
             const j = await resp.json();
             const total = Array.isArray(j.auditors) ? j.auditors.length : (j.users || []).length;
-            isSoleUser = total <= 1;
+            soleUserCheckFailed = false;
+            if (total <= 1) {
+              // Primeiro acesso: cria/promove o perfil como administrador
+              const { data: upserted, error: upsertError } = await supabase
+                .from('profiles')
+                .upsert({ id: data.user.id, email, nome: nomeUser, role: 'administrador' }, { onConflict: 'id' })
+                .select('role')
+                .maybeSingle();
+              role = upserted?.role || 'administrador';
+              if (upsertError) console.warn('Aviso ao gravar perfil (RLS?):', upsertError.message);
+            }
           }
         } catch (e) {
           console.warn('Não foi possível listar usuários:', e);
         }
 
-        if (isSoleUser) {
-          // Primeiro acesso: cria/promove o perfil como administrador
+        // Se a checagem de "único usuário" falhou (rede/permite), tenta o bootstrap mesmo assim.
+        if (!role && soleUserCheckFailed) {
           const { data: upserted, error: upsertError } = await supabase
             .from('profiles')
             .upsert({ id: data.user.id, email, nome: nomeUser, role: 'administrador' }, { onConflict: 'id' })
             .select('role')
             .maybeSingle();
-          role = upserted?.role || 'administrador';
-          if (upsertError) console.warn('Aviso ao gravar perfil (RLS?):', upsertError.message);
-        } else {
+          if (upserted) {
+            role = upserted.role;
+          } else if (upsertError) {
+            console.warn('Bootstrap de perfil bloqueado:', upsertError.message);
+          }
+        }
+
+        if (!role) {
           console.error('Perfil ausente:', profileError);
           setMessage(
             'Você entrou, mas não possui um perfil de acesso (tabela profiles). ' +
