@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from './supabaseClient';
+import { supabase, SUPABASE_URL } from './supabaseClient';
 import { useNavigate } from 'react-router-dom';
 import './Login.css';
 
@@ -108,31 +108,51 @@ function Login() {
 
       // Verificar perfil do usuário
       let role = null;
+      const nomeUser = data.user?.user_metadata?.nome || '';
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', data.user.id)
-        .single();
+        .maybeSingle();
 
       if (profile) {
         role = profile.role;
       } else {
-        // Perfil não existe ainda (ex.: criado antes da tabela ou sem confirmação de e-mail):
-        // cria automaticamente com papel padrão para destravar o primeiro acesso.
-        const { data: created, error: createError } = await supabase
-          .from('profiles')
-          .insert({ id: data.user.id, email, role: 'administrador' })
-          .select('role')
-          .single();
-
-        if (created && !createError) {
-          role = created.role;
-        } else {
-          console.error('Erro ao verificar/criar perfil:', profileError, createError);
-          setMessage(
-            'Login OK, mas não foi possível acessar o banco de dados (perfil). ' +
-            'Verifique as tabelas/políticas no Supabase.'
+        // O perfil pode existir, mas estar invisível por causa das políticas RLS.
+        // Se este for o ÚNICO usuário do sistema, ele é o primeiro administrador:
+        // a tela "Criar conta de administrador" só aparece quando não há usuários.
+        let isSoleUser = false;
+        try {
+          const resp = await fetch(
+            `${SUPABASE_URL}/auth/v1/admin/users?page=1&per_page=2`,
+            { headers: { Authorization: `Bearer ${data.session.access_token}` } }
           );
+          if (resp.ok) {
+            const j = await resp.json();
+            const total = Array.isArray(j.auditors) ? j.auditors.length : (j.users || []).length;
+            isSoleUser = total <= 1;
+          }
+        } catch (e) {
+          console.warn('Não foi possível listar usuários:', e);
+        }
+
+        if (isSoleUser) {
+          // Primeiro acesso: cria/promove o perfil como administrador
+          const { data: upserted, error: upsertError } = await supabase
+            .from('profiles')
+            .upsert({ id: data.user.id, email, nome: nomeUser, role: 'administrador' }, { onConflict: 'id' })
+            .select('role')
+            .maybeSingle();
+          role = upserted?.role || 'administrador';
+          if (upsertError) console.warn('Aviso ao gravar perfil (RLS?):', upsertError.message);
+        } else {
+          console.error('Perfil ausente:', profileError);
+          setMessage(
+            'Você entrou, mas não possui um perfil de acesso (tabela profiles). ' +
+            'Peça a um administrador para criar/recuperar seu perfil na tela Administração, ' +
+            'ou verifique as políticas RLS da tabela profiles no Supabase.'
+          );
+          await supabase.auth.signOut();
           setLoading(false);
           return;
         }

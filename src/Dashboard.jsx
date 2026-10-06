@@ -8,12 +8,37 @@ function Dashboard() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const role = localStorage.getItem('userRole');
-    if (!role) {
-      navigate('/login');
-      return;
-    }
-    setUserRole(role);
+    (async () => {
+      // Recarrega o papel direto do banco para corrigir valores antigos/ausentes
+      // (ex.: usuário que entrou antes da tela de Administração existir).
+      const userId = localStorage.getItem('userId');
+      let role = localStorage.getItem('userRole');
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session && !localStorage.getItem('skipAuthCheck')) {
+          navigate('/login');
+          return;
+        }
+        if (userId) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', userId)
+            .maybeSingle();
+          if (profile?.role && profile.role !== role) {
+            role = profile.role;
+            localStorage.setItem('userRole', role);
+          }
+        }
+      } catch (e) {
+        console.warn('Não foi possível atualizar o papel:', e);
+      }
+      if (!role) {
+        navigate('/login');
+        return;
+      }
+      setUserRole(role);
+    })();
   }, [navigate]);
 
   const handleLogout = async () => {
