@@ -109,3 +109,18 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+/* === Formulário de pessoas em blocos === */
+.person-blocks { display: flex; flex-direction: column; gap: 14px; }
+.person-fieldset { border: 1px solid #d8c9a3; border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; background: #fffdf7; }
+.person-fieldset legend { font-weight: 700; color: #8a6d1f; padding: 0 6px; font-size: .95rem; }
+.person-fieldset input { width: 100%; box-sizing: border-box; }
+.person-label { display: flex; flex-direction: column; gap: 4px; font-size: .85rem; color: #555; }
+.person-checks { display: flex; gap: 16px; flex-wrap: wrap; }
+.person-cep-row { display: flex; gap: 8px; align-items: center; }
+.person-cep-row input { max-width: 160px; }
+.person-row-3 { display: flex; gap: 8px; }
+.person-row-3 input { flex: 1; }
+.person-actions { display: flex; gap: 8px; }
+.cad-msg.erro { color: #b3261e; font-weight: 600; }
+@media (max-width: 600px) { .person-row-3 { flex-direction: column; } }
