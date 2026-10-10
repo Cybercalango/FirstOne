@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import BackBar from '../components/BackBar';
 import { supabase } from '../supabaseClient';
 
 // Página exclusiva do ADMINISTRADOR: criar usuários (login/senha),
@@ -92,6 +93,7 @@ function Usuarios() {
 
   return (
     <div style={{ padding: 20, maxWidth: 900, margin: '0 auto' }}>
+      <BackBar title="Gerenciar Usuários" />
       <h2>Gerenciar Usuários (Administrador)</h2>
 
       <form onSubmit={criarUsuario} className="card" style={{ padding: 16, marginBottom: 24, border: '1px solid #ddd', borderRadius: 8 }}>

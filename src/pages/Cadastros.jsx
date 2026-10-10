@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import BackBar from '../components/BackBar';
 import { supabase } from '../supabaseClient';
 
 // Páginas de cadastro: Variantes, Tipos, Grades (com tamanhos), Pessoas e Modelos/Itens
@@ -175,6 +176,7 @@ export default function Cadastros() {
   const [tab, setTab] = useState('variants');
   return (
     <div className="cad-container">
+      <BackBar title="Cadastros Base" />
       <h2>Cadastros Base</h2>
       <div className="tabs">
         {tabs.map((t) => (

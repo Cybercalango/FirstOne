@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import BackBar from '../components/BackBar';
 import { supabase } from '../supabaseClient';
 
 // Entrada e saída de estoque (empréstimo/devolução a vendedores e parceiros)
@@ -51,6 +52,7 @@ export default function Movimentacoes() {
 
   return (
     <div className="cad-container">
+      <BackBar title="Movimentações de Estoque" />
       <h2>Movimentações de Estoque</h2>
       <div className="cad-block">
         <h3>Registrar Entrada / Saída</h3>

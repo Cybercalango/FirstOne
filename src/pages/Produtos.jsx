@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import BackBar from '../components/BackBar';
 import { supabase } from '../supabaseClient';
 
 // Cadastro de Modelos de joia e Itens (peças) com variante, tamanho, aquisição e consignação
@@ -77,6 +78,7 @@ export default function Produtos() {
 
   return (
     <div className="cad-container">
+      <BackBar title="Produtos — Modelos e Peças" />
       <h2>Produtos — Modelos e Peças</h2>
 
       <div className="cad-block">

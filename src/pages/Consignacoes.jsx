@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import BackBar from '../components/BackBar';
 import { supabase } from '../supabaseClient';
 
 // Consignação: remessa formal de peças a um parceiro/vendedor, com prazo e baixa de devoluções
@@ -81,6 +82,7 @@ export default function Consignacoes() {
 
   return (
     <div className="cad-container">
+      <BackBar title="Consignações" />
       <h2>Consignações</h2>
 
       <div className="cad-block">
