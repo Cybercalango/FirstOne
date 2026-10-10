@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import BackBar from '../components/BackBar';
 import { supabase } from '../supabaseClient';
 
-// Páginas de cadastro: Variantes, Tipos, Grades (com tamanhos), Pessoas e Modelos/Itens
+// Cadastros base relativos aos produtos: Variantes, Tipos, Grades (com tamanhos) e Modelos.
+// Obs.: o cadastro de Pessoas foi promovido a card próprio no menu principal (/pessoas).
 const tabs = [
   { id: 'variants', label: '🎨 Variantes' },
   { id: 'types', label: '📿 Tipos' },
   { id: 'grids', label: '📏 Grades de Tamanho' },
-  { id: 'people', label: '👤 Clientes / Vendedores' },
+  { id: 'models', label: '💍 Modelos de Joia' },
 ];
 
 function SimpleList({ table, labelSingular }) {
@@ -122,49 +123,74 @@ function Grids() {
   );
 }
 
-function People() {
-  const [rows, setRows] = useState([]);
-  const [f, setF] = useState({ name: '', cpf_cnpj: '', phone: '', email: '', address: '', is_client: true, is_consignor: false });
+function Models() {
+  const [models, setModels] = useState([]);
+  const [types, setTypes] = useState([]);
+  const [grids, setGrids] = useState([]);
+  const [f, setF] = useState({ name: '', type_id: '', default_grid_id: '', description: '' });
   const [msg, setMsg] = useState('');
 
   const load = async () => {
-    const { data } = await supabase.from('people').select('*').order('id', { ascending: false });
-    setRows(data || []);
+    const [mo, ty, gr] = await Promise.all([
+      supabase.from('models').select('*').order('id', { ascending: false }),
+      supabase.from('types').select('*').order('name'),
+      supabase.from('size_grids').select('*').order('name'),
+    ]);
+    setModels(mo.data || []); setTypes(ty.data || []); setGrids(gr.data || []);
   };
   useEffect(() => { load(); }, []);
 
-  const submit = async (e) => {
+  const add = async (e) => {
     e.preventDefault();
     if (!f.name.trim()) return;
-    const { error } = await supabase.from('people').insert([f]);
+    const { error } = await supabase.from('models').insert([{
+      name: f.name.trim(),
+      type_id: f.type_id ? Number(f.type_id) : null,
+      default_grid_id: f.default_grid_id ? Number(f.default_grid_id) : null,
+      description: f.description || null,
+    }]);
     if (error) setMsg('Erro: ' + error.message);
-    else { setF({ name: '', cpf_cnpj: '', phone: '', email: '', address: '', is_client: true, is_consignor: false }); setMsg('Pessoa cadastrada!'); load(); }
+    else { setF({ name: '', type_id: '', default_grid_id: '', description: '' }); setMsg('Modelo criado!'); load(); }
   };
 
-  const set = (k) => (e) => setF({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value });
+  const remove = async (id) => {
+    if (!window.confirm('Excluir este modelo? As peças vinculadas perderão a referência.')) return;
+    const { error } = await supabase.from('models').delete().eq('id', id);
+    if (error) setMsg('Erro: ' + error.message); else load();
+  };
+
+  const typeName = (id) => (types.find((t) => t.id === id) || {}).name || '—';
+  const gridName = (id) => (grids.find((g) => g.id === id) || {}).name || '—';
 
   return (
     <div className="cad-block">
-      <form onSubmit={submit} className="cad-form people-form">
-        <input placeholder="Nome *" value={f.name} onChange={set('name')} />
-        <input placeholder="CPF/CNPJ" value={f.cpf_cnpj} onChange={set('cpf_cnpj')} />
-        <input placeholder="Telefone/WhatsApp" value={f.phone} onChange={set('phone')} />
-        <input placeholder="E-mail" value={f.email} onChange={set('email')} />
-        <input placeholder="Endereço" value={f.address} onChange={set('address')} />
-        <label><input type="checkbox" checked={f.is_client} onChange={set('is_client')} /> Cliente</label>
-        <label><input type="checkbox" checked={f.is_consignor} onChange={set('is_consignor')} /> Vendedor/Consignatário</label>
-        <button type="submit">Cadastrar</button>
+      <h3>Novo Modelo de Joia</h3>
+      <form onSubmit={add} className="cad-form people-form">
+        <input placeholder="Nome do modelo * (ex.: Anel Solitário)" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
+        <select value={f.type_id} onChange={(e) => setF({ ...f, type_id: e.target.value })}>
+          <option value="">Tipo…</option>
+          {types.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+        </select>
+        <select value={f.default_grid_id} onChange={(e) => setF({ ...f, default_grid_id: e.target.value })}>
+          <option value="">Grade de tamanho…</option>
+          {grids.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+        </select>
+        <input placeholder="Descrição" value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} />
+        <button type="submit">Criar Modelo</button>
       </form>
+
       <table className="cad-table">
-        <thead><tr><th>Nome</th><th>Contato</th><th>Papel</th></tr></thead>
+        <thead><tr><th>Modelo</th><th>Tipo</th><th>Grade</th><th>Ações</th></tr></thead>
         <tbody>
-          {rows.map((p) => (
-            <tr key={p.id}>
-              <td>{p.name}</td>
-              <td>{p.phone} {p.email && `· ${p.email}`}</td>
-              <td>{[p.is_client && 'Cliente', p.is_consignor && 'Consignatário'].filter(Boolean).join(', ')}</td>
+          {models.map((m) => (
+            <tr key={m.id}>
+              <td>{m.name}</td>
+              <td>{typeName(m.type_id)}</td>
+              <td>{gridName(m.default_grid_id)}</td>
+              <td><button className="del-btn" onClick={() => remove(m.id)}>✕</button></td>
             </tr>
           ))}
+          {models.length === 0 && <tr><td colSpan="4">Nenhum modelo cadastrado ainda.</td></tr>}
         </tbody>
       </table>
       {msg && <p className="cad-msg">{msg}</p>}
@@ -177,7 +203,7 @@ export default function Cadastros() {
   return (
     <div className="cad-container">
       <BackBar title="Cadastros Base" />
-      <h2>Cadastros Base</h2>
+      <h2>Cadastros Base — Produtos</h2>
       <div className="tabs">
         {tabs.map((t) => (
           <button key={t.id} className={tab === t.id ? 'tab active' : 'tab'} onClick={() => setTab(t.id)}>{t.label}</button>
@@ -186,7 +212,7 @@ export default function Cadastros() {
       {tab === 'variants' && <SimpleList table="variants" labelSingular="variante" />}
       {tab === 'types' && <SimpleList table="types" labelSingular="tipo" />}
       {tab === 'grids' && <Grids />}
-      {tab === 'people' && <People />}
+      {tab === 'models' && <Models />}
     </div>
   );
 }

@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import BackBar from '../components/BackBar';
 import { supabase } from '../supabaseClient';
 
-// Cadastro de Modelos de joia e Itens (peças) com variante, tamanho, aquisição e consignação
+// Cadastro de Peças (Itens). Os cadastros base relativos aos produtos
+// (variantes, tipos, grades e modelos) foram movidos para /cadastros.
 export default function Produtos() {
+  const navigate = useNavigate();
   const [models, setModels] = useState([]);
   const [types, setTypes] = useState([]);
   const [variants, setVariants] = useState([]);
@@ -14,8 +17,6 @@ export default function Produtos() {
   const [selModel, setSelModel] = useState(null);
   const [msg, setMsg] = useState('');
 
-  // form modelo
-  const [m, setM] = useState({ name: '', type_id: '', default_grid_id: '', description: '' });
   // form item
   const [it, setIt] = useState({ barcode: '', variant_id: '', size: '', price_cost: '', price_sale: '', status: 'estoque', owner_type: 'loja', owner_id: '', acquisition_date: '' });
 
@@ -33,19 +34,6 @@ export default function Produtos() {
     setGrids(gr.data || []); setGridSizes(gs.data || []); setPeople(pe.data || []); setItems(im.data || []);
   };
   useEffect(() => { load(); }, []);
-
-  const addModel = async (e) => {
-    e.preventDefault();
-    if (!m.name.trim()) return;
-    const { error } = await supabase.from('models').insert([{
-      name: m.name.trim(),
-      type_id: m.type_id ? Number(m.type_id) : null,
-      default_grid_id: m.default_grid_id ? Number(m.default_grid_id) : null,
-      description: m.description || null,
-    }]);
-    if (error) setMsg('Erro: ' + error.message);
-    else { setM({ name: '', type_id: '', default_grid_id: '', description: '' }); setMsg('Modelo criado!'); load(); }
-  };
 
   const addItem = async (e) => {
     e.preventDefault();
@@ -78,28 +66,15 @@ export default function Produtos() {
 
   return (
     <div className="cad-container">
-      <BackBar title="Produtos — Modelos e Peças" />
-      <h2>Produtos — Modelos e Peças</h2>
-
-      <div className="cad-block">
-        <h3>Novo Modelo de Joia</h3>
-        <form onSubmit={addModel} className="cad-form people-form">
-          <input placeholder="Nome do modelo *" value={m.name} onChange={(e) => setM({ ...m, name: e.target.value })} />
-          <select value={m.type_id} onChange={(e) => setM({ ...m, type_id: e.target.value })}>
-            <option value="">Tipo…</option>
-            {types.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-          </select>
-          <select value={m.default_grid_id} onChange={(e) => setM({ ...m, default_grid_id: e.target.value })}>
-            <option value="">Grade de tamanho…</option>
-            {grids.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
-          </select>
-          <input placeholder="Descrição" value={m.description} onChange={(e) => setM({ ...m, description: e.target.value })} />
-          <button type="submit">Criar Modelo</button>
-        </form>
-      </div>
+      <BackBar title="Produtos — Peças" />
+      <h2>Produtos — Cadastro de Peças</h2>
 
       <div className="cad-block">
         <h3>Cadastrar Peça (Item)</h3>
+        <p style={{ fontSize: 14, color: '#555' }}>
+          💡 Os cadastros base de produtos (variantes, tipos, grades e modelos) ficam em{' '}
+          <a href="/cadastros" onClick={(e) => { e.preventDefault(); navigate('/cadastros'); }}>Cadastros Base — Produtos</a>.
+        </p>
         <form onSubmit={addItem} className="cad-form people-form">
           <select value={selModel || ''} onChange={(e) => setSelModel(Number(e.target.value))}>
             <option value="">Selecionar modelo…</option>

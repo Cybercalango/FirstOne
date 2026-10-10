@@ -66,11 +66,15 @@ function Dashboard() {
             <>
               <div className="menu-item clickable" onClick={() => navigate('/produtos')}>
                 <h3>📦 Produtos / Estoque</h3>
-                <p>Cadastrar modelos, peças, variantes e preços</p>
+                <p>Cadastrar peças com variante, tamanho, preço e aquisição</p>
               </div>
               <div className="menu-item clickable" onClick={() => navigate('/cadastros')}>
-                <h3>🗂️ Cadastros Base</h3>
-                <p>Variantes, tipos, grades de tamanho, clientes e vendedores</p>
+                <h3>🗂️ Cadastros Base — Produtos</h3>
+                <p>Variantes, tipos, grades de tamanho e modelos de joia</p>
+              </div>
+              <div className="menu-item clickable" onClick={() => navigate('/pessoas')}>
+                <h3>👥 Pessoas</h3>
+                <p>Cadastrar clientes, vendedores e consignatários</p>
               </div>
             </>
           )}

@@ -4,6 +4,7 @@ import Login from './Login';
 import Dashboard from './Dashboard';
 import Cadastros from './pages/Cadastros';
 import Produtos from './pages/Produtos';
+import Pessoas from './pages/Pessoas';
 import Usuarios from './pages/Usuarios';
 import Consignacoes from './pages/Consignacoes';
 import Movimentacoes from './pages/Movimentacoes';
@@ -17,6 +18,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/cadastros" element={<Cadastros />} />
         <Route path="/produtos" element={<Produtos />} />
+        <Route path="/pessoas" element={<Pessoas />} />
         <Route path="/usuarios" element={<Usuarios />} />
         <Route path="/consignacoes" element={<Consignacoes />} />
         <Route path="/movimentacoes" element={<Movimentacoes />} />
