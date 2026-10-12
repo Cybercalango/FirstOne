@@ -66,10 +66,43 @@ export default function Consignacoes() {
   };
 
   const closeConsignment = async (c) => {
+    const pend = cItems.filter((x) => x.consignment_id === c.id && !x.returned && !x.sold);
+    if (pend.length && !window.confirm(`Atenção: ${pend.length} peça(s) NÃO devolvidas. Clique OK para ENCERRAR mesmo assim e depois cobrá-las em Vendas, ou Cancelar para não encerrar.`)) return;
     const { error } = await supabase.from('consignments')
       .update({ status: 'encerrada' }).eq('id', c.id);
     if (error) setMsg('Erro: ' + error.message);
     else { setMsg(`Consignação #${c.id} encerrada.`); setSelC(null); load(); }
+  };
+
+  // Cobrança de itens não devolvidos: gera uma venda por consignação com
+  // todas as peças pendentes (saíram em consignação, agora são faturadas).
+  const chargePending = async (c) => {
+    const pend = cItems.filter((x) => x.consignment_id === c.id && !x.returned && !x.sold);
+    if (!pend.length) { setMsg('Nenhuma peça pendente para cobrar.'); return; }
+    if (!window.confirm(`Cobrar ${pend.length} peça(s) não devolvidas da Consignação #${c.id}?`)) return;
+    setMsg('Registrando cobrança…');
+    try {
+      const rows = pend.map((x) => items.find((i) => i.id === x.item_id)).filter(Boolean);
+      const total = rows.reduce((s, i) => s + Number(i.price_sale || 0), 0);
+      const { data: sale, error: e1 } = await supabase.from('sales').insert([{
+        customer_id: c.consignor_id,
+        consignment_id: c.id,
+        total_amount: total,
+        payment_method: 'cobranca_consignacao',
+        notes: `Cobrança de itens não devolvidos — Consignação #${c.id}`,
+        user_id: localStorage.getItem('userId'),
+      }]).select().single();
+      if (e1) throw new Error(e1.message);
+      for (const it of rows) {
+        await supabase.from('sale_items').insert([{ sale_id: sale.id, item_id: it.id, unit_value: Number(it.price_sale || 0) }]);
+        await supabase.rpc('set_item_status', { p_item_id: it.id, p_to_status: 'vendido', p_reason: 'cobranca_consignacao' });
+        await supabase.rpc('mark_consignment_item_sold', { p_item_id: it.id });
+      }
+      await supabase.from('consignments').update({ status: 'encerrada', end_date: new Date().toISOString().slice(0, 10) }).eq('id', c.id);
+      setMsg(`✅ Cobrança registrada como Venda ${sale.code} — R$ ${total.toFixed(2)}.`);
+      setSelC(null);
+    } catch (err) { setMsg('Erro: ' + err.message); }
+    load();
   };
 
   const personName = (id) => (people.find((p) => p.id === id) || {}).name || '—';
@@ -78,7 +111,7 @@ export default function Consignacoes() {
     return it ? `${it.barcode || 'ID ' + it.id}` : `#${id}`;
   };
   const activeItems = items.filter((i) => i.status === 'estoque');
-  const detailItems = cItems.filter((x) => x.consignment_id === selC && !x.returned);
+  const detailItems = cItems.filter((x) => x.consignment_id === selC && !x.returned && !x.sold);
 
   return (
     <div className="cad-container">
@@ -119,17 +152,18 @@ export default function Consignacoes() {
           <tbody>
             {consignments.map((c) => {
               const total = cItems.filter((x) => x.consignment_id === c.id).length;
-              const pend = cItems.filter((x) => x.consignment_id === c.id && !x.returned).length;
+              const pend = cItems.filter((x) => x.consignment_id === c.id && !x.returned && !x.sold);
               return (
                 <tr key={c.id}>
                   <td data-label="#">{c.id}</td>
                   <td data-label="Parceiro">{personName(c.consignor_id)}</td>
                   <td data-label="Início">{c.start_date}</td>
                   <td data-label="Prazo">{c.due_date || '—'}</td>
-                  <td data-label="Peças">{pend}/{total} em poder</td>
+                  <td data-label="Peças">{pend.length}/{total} em poder</td>
                   <td data-label="Status">{c.status === 'ativa' ? '🟢 Ativa' : '⚪ Encerrada'}</td>
                   <td data-label="Ações">
                     <button onClick={() => setSelC(c.id)}>Ver/Adicionar</button>
+                    {c.status === 'ativa' && pend.length > 0 && <button onClick={() => chargePending(c)}>💰 Cobrar não devolvidas</button>}
                     {c.status === 'ativa' && <button onClick={() => closeConsignment(c)}>Encerrar</button>}
                   </td>
                 </tr>

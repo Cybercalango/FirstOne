@@ -72,7 +72,7 @@ function Dashboard() {
             </div>
           )}
 
-          <div className="menu-item">
+          <div className="menu-item clickable" onClick={() => navigate('/vendas')}>
             <h3>💰 Vendas</h3>
             <p>Registrar vendas e PDV</p>
           </div>
@@ -98,9 +98,9 @@ function Dashboard() {
             </div>
           )}
 
-          <div className="menu-item">
+          <div className="menu-item clickable" onClick={() => navigate('/relatorios')}>
             <h3>📊 Relatórios</h3>
-            <p>Visualizar relatórios</p>
+            <p>Vendas por período, vendedor e faturamento</p>
           </div>
 
           {(userRole === 'administrador' || userRole === 'gerente') && (
