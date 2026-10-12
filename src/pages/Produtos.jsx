@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import BackBar from '../components/BackBar';
 import { supabase } from '../supabaseClient';
 
-// Cadastro de Peças (Itens). Os cadastros base relativos aos produtos
-// (variantes, tipos, grades e modelos) foram movidos para /cadastros.
 export default function Produtos() {
   const navigate = useNavigate();
   const [models, setModels] = useState([]);
@@ -17,7 +15,6 @@ export default function Produtos() {
   const [selModel, setSelModel] = useState(null);
   const [msg, setMsg] = useState('');
 
-  // form item
   const [it, setIt] = useState({ barcode: '', variant_id: '', size: '', price_cost: '', price_sale: '', status: 'estoque', owner_type: 'loja', owner_id: '', acquisition_date: '' });
 
   const load = async () => {
@@ -118,14 +115,14 @@ export default function Produtos() {
           <tbody>
             {items.map((i) => (
               <tr key={i.id}>
-                <td>{i.barcode || i.id}</td>
-                <td>{modelName(i.model_id)}</td>
-                <td>{variantName(i.variant_id)}</td>
-                <td>{i.size || '—'}</td>
-                <td>{i.price_sale ? `R$ ${Number(i.price_sale).toFixed(2)}` : '—'}</td>
-                <td>{i.status}</td>
-                <td>{i.owner_type === 'pessoa' ? personName(i.owner_id) : 'Loja'}</td>
-                <td>{i.acquisition_date || '—'}</td>
+                <td data-label="Código">{i.barcode || i.id}</td>
+                <td data-label="Modelo">{modelName(i.model_id)}</td>
+                <td data-label="Variação">{variantName(i.variant_id)}</td>
+                <td data-label="Tam.">{i.size || '—'}</td>
+                <td data-label="Venda">{i.price_sale ? `R$ ${Number(i.price_sale).toFixed(2)}` : '—'}</td>
+                <td data-label="Status">{i.status}</td>
+                <td data-label="Proprietário">{i.owner_type === 'pessoa' ? personName(i.owner_id) : 'Loja'}</td>
+                <td data-label="Aquisição">{i.acquisition_date || '—'}</td>
               </tr>
             ))}
           </tbody>
