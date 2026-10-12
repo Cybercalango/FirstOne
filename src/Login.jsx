@@ -95,7 +95,7 @@ function Login() {
         const msg = (error.message || '').toLowerCase();
         if (msg.includes('invalid login credentials')) {
           throw new Error(
-            'E-mail ou senha incorretos. Se você ainda NÃO possui cadastro, use o botão "Criar conta de administrador" abaixo.'
+            'E-mail ou senha incorretos. Se você não possui cadastro, peça ao administrador para criar seu acesso.'
           );
         }
         if (msg.includes('email not confirmed')) {
@@ -222,12 +222,6 @@ function Login() {
                 {loading ? 'Entrando...' : 'Entrar'}
               </button>
             </form>
-            <p className="toggle-link">
-              Ainda não possui cadastro?{' '}
-              <button type="button" className="link-btn" onClick={() => { setMode('signup'); setMessage(''); }}>
-                Criar conta de administrador
-              </button>
-            </p>
           </>
         ) : (
           <>
