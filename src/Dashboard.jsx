@@ -62,29 +62,8 @@ function Dashboard() {
 
       <main className="dashboard-content">
         <div className="menu-grid">
-          {(userRole === 'administrador' || userRole === 'gerente') && (
-            <>
-              <div className="menu-item clickable" onClick={() => navigate('/produtos')}>
-                <h3>📦 Produtos / Estoque</h3>
-                <p>Cadastrar peças com variante, tamanho, preço e aquisição</p>
-              </div>
-              <div className="menu-item clickable" onClick={() => navigate('/cadastros')}>
-                <h3>🗂️ Cadastros Base — Produtos</h3>
-                <p>Variantes, tipos, grades de tamanho e modelos de joia</p>
-              </div>
-              <div className="menu-item clickable" onClick={() => navigate('/pessoas')}>
-                <h3>👥 Pessoas</h3>
-                <p>Cadastrar clientes, vendedores e consignatários</p>
-              </div>
-            </>
-          )}
-
-          {userRole === 'administrador' && (
-            <div className="menu-item clickable" onClick={() => navigate('/usuarios')}>
-              <h3>⚙️ Administração</h3>
-              <p>Criar logins, alterar senhas e níveis de acesso</p>
-            </div>
-          )}
+          {/* Ordem dos cards: Consignações, Vendas, Entrada/Saída,
+              Produtos, Pessoas, Relatórios, Cadastros Base, Administração */}
 
           {(userRole === 'administrador' || userRole === 'gerente') && (
             <div className="menu-item clickable" onClick={() => navigate('/consignacoes')}>
@@ -93,6 +72,11 @@ function Dashboard() {
             </div>
           )}
 
+          <div className="menu-item">
+            <h3>💰 Vendas</h3>
+            <p>Registrar vendas e PDV</p>
+          </div>
+
           {(userRole === 'administrador' || userRole === 'gerente') && (
             <div className="menu-item clickable" onClick={() => navigate('/movimentacoes')}>
               <h3>🔄 Entrada / Saída de Estoque</h3>
@@ -100,15 +84,38 @@ function Dashboard() {
             </div>
           )}
 
-          <div className="menu-item">
-            <h3>💰 Vendas</h3>
-            <p>Registrar vendas e PDV</p>
-          </div>
+          {(userRole === 'administrador' || userRole === 'gerente') && (
+            <div className="menu-item clickable" onClick={() => navigate('/produtos')}>
+              <h3>📦 Produtos / Estoque</h3>
+              <p>Cadastrar peças com variante, tamanho, preço e aquisição</p>
+            </div>
+          )}
+
+          {(userRole === 'administrador' || userRole === 'gerente') && (
+            <div className="menu-item clickable" onClick={() => navigate('/pessoas')}>
+              <h3>👥 Pessoas</h3>
+              <p>Cadastrar clientes, vendedores e consignatários</p>
+            </div>
+          )}
 
           <div className="menu-item">
             <h3>📊 Relatórios</h3>
             <p>Visualizar relatórios</p>
           </div>
+
+          {(userRole === 'administrador' || userRole === 'gerente') && (
+            <div className="menu-item clickable" onClick={() => navigate('/cadastros')}>
+              <h3>🗂️ Cadastros Base — Produtos</h3>
+              <p>Variantes, tipos, grades de tamanho e modelos de joia</p>
+            </div>
+          )}
+
+          {userRole === 'administrador' && (
+            <div className="menu-item clickable" onClick={() => navigate('/usuarios')}>
+              <h3>⚙️ Administração</h3>
+              <p>Criar logins, alterar senhas e níveis de acesso</p>
+            </div>
+          )}
         </div>
       </main>
     </div>
