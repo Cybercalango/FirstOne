@@ -40,6 +40,15 @@ export default function Relatorios() {
   };
   const customerName = (id) => (people.find((x) => x.id === id) || {}).name || 'Avulso';
 
+  // Excluir venda (admin): as peças voltam para o estoque via função SQL delete_sale
+  const deleteSale = async (s) => {
+    if (localStorage.getItem('userRole') !== 'administrador') { setMsg('Apenas administradores podem excluir vendas.'); return; }
+    if (!window.confirm(`EXCLUIR a Venda ${s.code || '#' + s.id} de ${new Date(s.created_at).toLocaleString('pt-BR')}?\n\nAs peças desta venda voltarão para o estoque.\nEsta ação não pode ser desfeita.`)) return;
+    const { data, error } = await supabase.rpc('delete_sale', { p_id: s.id });
+    if (error) setMsg('Erro ao excluir: ' + error.message);
+    else { setMsg(data || 'Venda excluída.'); load(); }
+  };
+
   return (
     <div className="cad-container">
       <BackBar title="Relatórios" />
@@ -72,7 +81,7 @@ export default function Relatorios() {
       <div className="cad-block">
         <h3>Vendas registradas</h3>
         <table className="cad-table">
-          <thead><tr><th>Código</th><th>Data</th><th>Vendedor</th><th>Cliente</th><th>Pagamento</th><th>Total</th></tr></thead>
+          <thead><tr><th>Código</th><th>Data</th><th>Vendedor</th><th>Cliente</th><th>Pagamento</th><th>Total</th>{localStorage.getItem('userRole') === 'administrador' && <th>Ações</th>}</tr></thead>
           <tbody>
             {sales.map((s) => (
               <tr key={s.id}>
@@ -82,9 +91,12 @@ export default function Relatorios() {
                 <td data-label="Cliente">{customerName(s.customer_id)}</td>
                 <td data-label="Pagamento">{s.payment_method || '—'}</td>
                 <td data-label="Total">R$ {Number(s.total_amount || 0).toFixed(2)}</td>
+                {localStorage.getItem('userRole') === 'administrador' && (
+                  <td data-label="Ações"><button onClick={() => deleteSale(s)} style={{ color: '#c0392b' }}>🗑 Excluir</button></td>
+                )}
               </tr>
             ))}
-            {!sales.length && <tr><td colSpan={6}>Nenhuma venda no período.</td></tr>}
+            {!sales.length && <tr><td colSpan={localStorage.getItem('userRole') === 'administrador' ? 7 : 6}>Nenhuma venda no período.</td></tr>}
           </tbody>
         </table>
       </div>

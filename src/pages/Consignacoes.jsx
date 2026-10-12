@@ -175,6 +175,21 @@ export default function Consignacoes() {
     else { setMsg(`Consignação #${c.id} cancelada; peças devolvidas ao estoque.`); setSelC(null); load(); }
   };
 
+  // Excluir definitivamente (admin): remove a consignação e devolve as peças em poder ao estoque
+  const deleteConsignment = async (c) => {
+    if (localStorage.getItem('userRole') !== 'administrador') { setMsg('Apenas administradores podem excluir consignações.'); return; }
+    const pend = cPend(c.id);
+    const ok = window.confirm(
+      `EXCLUIR DEFINITIVAMENTE a Consignação #${c.id} (${c.code || ''})?\n\n` +
+      `${pend.length} peça(s) em poder do parceiro voltarão para o estoque.\n` +
+      `Peças já devolvidas ou vendidas NÃO são alteradas.\n\nEsta ação não pode ser desfeita.`
+    );
+    if (!ok) return;
+    const { data, error } = await supabase.rpc('delete_consignment', { p_id: c.id });
+    if (error) setMsg('Erro ao excluir: ' + error.message);
+    else { setMsg(data || 'Consignação excluída.'); if (selC === c.id) setSelC(null); load(); }
+  };
+
   // Romaneio: janela de impressão da lista de peças
   const printRomaneio = (c) => {
     const list = cItems.filter((x) => x.consignment_id === c.id);
@@ -272,6 +287,7 @@ export default function Consignacoes() {
                     {c.status === 'ativa' && cPend(c.id).length > 0 && <button onClick={() => chargePending(c)}>💰 Acerto</button>}
                     {c.status === 'ativa' && <button onClick={() => closeConsignment(c)}>Encerrar</button>}
                     {c.status === 'ativa' && <button onClick={() => cancelConsignment(c)}>Cancelar</button>}
+                    {localStorage.getItem('userRole') === 'administrador' && <button onClick={() => deleteConsignment(c)} style={{ color: '#c0392b' }}>🗑 Excluir</button>}
                   </div>
                 </td>
               </tr>
