@@ -6,32 +6,37 @@
 .dashboard-header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  padding: 1.5rem 2rem;
+  padding: 1rem;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: flex-start;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .dashboard-header h1 {
-  font-size: 1.5rem;
+  font-size: 1.35rem;
   margin: 0;
 }
 
 .user-info {
   display: flex;
-  align-items: center;
-  gap: 1rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+  width: 100%;
 }
 
 .logout-btn {
   background: rgba(255, 255, 255, 0.2);
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.3);
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
+  padding: 0.7rem 1rem;
+  border-radius: 6px;
   cursor: pointer;
   transition: background 0.3s;
+  min-height: 44px;
+  width: 100%;
 }
 
 .logout-btn:hover {
@@ -39,24 +44,26 @@
 }
 
 .dashboard-content {
-  padding: 2rem;
+  padding: 1rem;
 }
 
 .menu-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: 1fr;
+  gap: 1rem;
   max-width: 1200px;
   margin: 0 auto;
 }
 
 .menu-item {
   background: white;
-  padding: 1.5rem;
+  padding: 1.1rem;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .menu-item:hover {
@@ -67,6 +74,7 @@
 .menu-item h3 {
   margin: 0 0 0.5rem 0;
   color: #333;
+  font-size: 1.05rem;
 }
 
 .menu-item p {
@@ -75,42 +83,195 @@
   font-size: 0.9rem;
 }
 
-@media (max-width: 768px) {
+.clickable {
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s;
+}
+
+.clickable:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .12);
+}
+
+.cad-container {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0.75rem;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.tab {
+  padding: 0.7rem 0.9rem;
+  border: 1px solid #ddd;
+  background: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+  min-height: 44px;
+}
+
+.tab.active {
+  background: #b8860b;
+  color: #fff;
+  border-color: #b8860b;
+}
+
+.cad-block {
+  background: #fff;
+  border-radius: 10px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+
+.cad-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.cad-form input,
+.cad-form select {
+  width: 100%;
+  padding: 0.75rem 0.8rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 1rem;
+  min-height: 44px;
+}
+
+.cad-form button {
+  padding: 0.8rem 1rem;
+  border: none;
+  background: #b8860b;
+  color: #fff;
+  border-radius: 6px;
+  cursor: pointer;
+  min-height: 44px;
+  width: 100%;
+}
+
+.people-form {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+.cad-list {
+  list-style: none;
+  padding: 0;
+}
+
+.cad-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eee;
+  gap: 0.5rem;
+}
+
+.del-btn {
+  background: transparent;
+  border: none;
+  color: #c0392b;
+  cursor: pointer;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.grid-card {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.5rem 0;
+}
+
+.chip {
+  background: #f3e9d2;
+  border-radius: 14px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.85rem;
+}
+
+.chip button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #c0392b;
+  min-width: 28px;
+  min-height: 28px;
+}
+
+.cad-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  display: block;
+  overflow-x: auto;
+}
+
+.cad-table th,
+.cad-table td {
+  text-align: left;
+  padding: 0.5rem;
+  border-bottom: 1px solid #eee;
+  white-space: nowrap;
+}
+
+.cad-msg {
+  color: #2e7d32;
+  font-size: 0.85rem;
+}
+
+@media (min-width: 600px) {
   .dashboard-header {
-    flex-direction: column;
-    gap: 1rem;
-    text-align: center;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
   }
 
   .user-info {
-    flex-direction: column;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    width: auto;
+  }
+
+  .logout-btn {
+    width: auto;
   }
 
   .menu-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-/* Cadastros e Produtos */
-.clickable { cursor: pointer; transition: transform .15s, box-shadow .15s; }
-.clickable:hover { transform: translateY(-3px); box-shadow: 0 6px 18px rgba(0,0,0,.12); }
-.cad-container { max-width: 960px; margin: 0 auto; padding: 1rem; }
-.tabs { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
-.tab { padding: .5rem 1rem; border: 1px solid #ddd; background: #fff; border-radius: 8px; cursor: pointer; }
-.tab.active { background: #b8860b; color: #fff; border-color: #b8860b; }
-.cad-block { background: #fff; border-radius: 10px; padding: 1rem; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
-.cad-form { display: flex; gap: .5rem; margin-bottom: .75rem; flex-wrap: wrap; }
-.cad-form input, .cad-form select { padding: .5rem; border: 1px solid #ccc; border-radius: 6px; flex: 1; min-width: 140px; }
-.cad-form button { padding: .5rem 1rem; border: none; background: #b8860b; color: #fff; border-radius: 6px; cursor: pointer; }
-.people-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: .5rem; }
-.cad-list { list-style: none; padding: 0; }
-.cad-list li { display: flex; justify-content: space-between; align-items: center; padding: .4rem 0; border-bottom: 1px solid #eee; }
-.del-btn { background: transparent; border: none; color: #c0392b; cursor: pointer; }
-.grid-card { border: 1px solid #eee; border-radius: 8px; padding: .75rem; margin-bottom: .75rem; }
-.chips { display: flex; flex-wrap: wrap; gap: .4rem; margin: .5rem 0; }
-.chip { background: #f3e9d2; border-radius: 14px; padding: .2rem .6rem; font-size: .85rem; }
-.chip button { background: none; border: none; cursor: pointer; color: #c0392b; }
-.cad-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
-.cad-table th, .cad-table td { text-align: left; padding: .4rem; border-bottom: 1px solid #eee; }
-.cad-msg { color: #2e7d32; font-size: .85rem; }
-@media (max-width: 768px) { .people-form { grid-template-columns: 1fr; } }
+@media (min-width: 900px) {
+  .dashboard-content {
+    padding: 2rem;
+  }
+
+  .menu-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .people-form {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+}
