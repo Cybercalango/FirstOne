@@ -90,6 +90,45 @@ Importante:
 3. O dashboard habilita módulos conforme o perfil do usuário.
 4. As páginas de cadastro e gestão acessam os dados no Supabase.
 
+## Validação mobile e performance
+
+Antes de produção, valide em um celular real ou em emulador com as telas abaixo:
+
+- login
+- dashboard
+- pessoas
+- produtos
+- consignações
+- movimentações
+- usuários
+
+Checklist mínimo:
+- botões com toque confortável
+- inputs sem zoom forçado
+- sem scroll horizontal
+- textos legíveis em telas pequenas
+- mensagens de erro visíveis
+- menus e ações acessíveis
+
+Comandos úteis:
+
+```bash
+npm install
+npm run build
+npm run preview -- --host 0.0.0.0
+```
+
+Depois, teste em DevTools/Responsive Mode com:
+- 360x640
+- 390x844
+- 768x1024
+
+Para uma auditoria mais forte, rode:
+
+```bash
+npx lighthouse http://localhost:4173 --only-categories=performance,accessibility,best-practices,seo
+```
+
 ## Observações importantes
 
 - O projeto ainda está em evolução e algumas partes do banco foram ajustadas por scripts de correção.
