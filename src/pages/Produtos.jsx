@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BackBar from '../components/BackBar';
 import { supabase } from '../supabaseClient';
+import { gerarCodigoInterno } from '../utils/codigoInterno';
 
 export default function Produtos() {
   const navigate = useNavigate();
@@ -77,7 +78,27 @@ export default function Produtos() {
             <option value="">Selecionar modelo…</option>
             {models.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
           </select>
-          <input placeholder="Código de barras" value={it.barcode} onChange={(e) => setIt({ ...it, barcode: e.target.value })} />
+          <input placeholder="Código interno (8 dígitos)" value={it.barcode} onChange={(e) => setIt({ ...it, barcode: e.target.value })} />
+          <button type="button" className="btn-sec" onClick={() => {
+            // Gera código interno: modelo (seq do cadastro) + variação (2 díg.) + grade (1 díg.) + DV
+            const mdlIdx = models.findIndex((x) => x.id === selModel);
+            const vIdx = variants.findIndex((v) => String(v.id) === String(it.variant_id));
+            const sizes = sizesForModel();
+            const gIdx = sizes.indexOf(it.size);
+            if (mdlIdx < 0 || vIdx < 0 || gIdx < 0) {
+              setMsg('Selecione modelo, variação e tamanho antes de gerar o código.');
+              return;
+            }
+            try {
+              const code = gerarCodigoInterno({
+                modelo: String(mdlIdx + 1).padStart(4, '0'),
+                variacao: String(vIdx + 1).padStart(2, '0'),
+                grade: String((gIdx % 9) + 1),
+              });
+              setIt({ ...it, barcode: code });
+              setMsg(`Código interno gerado: ${code}`);
+            } catch (err) { setMsg('Erro ao gerar código: ' + err.message); }
+          }}>🔢 Gerar código interno</button>
           <select value={it.variant_id} onChange={(e) => setIt({ ...it, variant_id: e.target.value })}>
             <option value="">Variação…</option>
             {variants.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
