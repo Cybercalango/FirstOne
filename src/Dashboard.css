@@ -90,7 +90,7 @@
 
 .clickable:hover {
   transform: translateY(-3px);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, .12);
+  box-shadow: 0 6px 18px rgba(0,0,0,.12);
 }
 
 .cad-container {
@@ -113,6 +113,7 @@
   border-radius: 8px;
   cursor: pointer;
   min-height: 44px;
+  font-size: 0.96rem;
 }
 
 .tab.active {
@@ -235,6 +236,32 @@
 .cad-msg {
   color: #2e7d32;
   font-size: 0.85rem;
+}
+
+.person-fieldset {
+  padding: 0.9rem;
+}
+
+.person-cep-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.person-cep-row button,
+.person-actions button {
+  min-height: 44px;
+}
+
+.person-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.person-actions button {
+  flex: 1 1 180px;
 }
 
 @media (min-width: 600px) {

@@ -1,24 +1,20 @@
-# Bloco 1 — status
+# Bloco 2 — status
 
 Status: concluído
 
 Resumo:
-- Ajustei a base do CSS para priorizar telas pequenas antes de layouts de desktop.
-- Eliminei a largura fixa que empurrava o layout para um aspecto mais desktop.
-- Reforcei melhor touch targets e empilhamento de elementos em mobile.
+- Ajustei a base do formulário de login para melhorar toque, leitura e espaçamento em telas pequenas.
+- Reforcei os componentes de cadastro e navegação interna com altura mínima de toque mais confortável.
+- Mantive a lógica de negócio intacta; apenas ajustei o comportamento visual e ergonomia mobile.
 
 Arquivos alterados:
-- `src/index.css`
+- `src/Login.css`
 - `src/Dashboard.css`
+- `src/components/BackBar.jsx`
 
 Ponto de pausa:
-- O projeto foi deixado em um estado seguro para continuar no próximo bloco.
-- Próximo bloco recomendado: revisão de formulários e components para tamanhos de toque e leitura em mobile.
-
-Proximos passos:
-1. Validar em emulador/dispositivo real.
-2. Ajustar tabelas e cards em telas pequenas.
-3. Revisar formulário de pessoas e gestão de estoque para uma UX mais responsiva.
+- O app foi deixado em estado seguro para continuar para as etapas de tabela/card em mobile.
+- Próximo bloco recomendado: revisão e conversão de tabelas para listagens móveis em telas pequenas.
 
 Observação:
-- Esta é uma mudança de base mobile-first e não altera a lógica do app. A funcionalidade continua intacta.
+- Este bloco prioriza usabilidade mobile sem alterar as regras do negócio ou a autenticação.
