@@ -79,19 +79,20 @@ export default function Etiquetas() {
   function limparSelecao() { setSelecionados({}); }
 
   return (
-    <div className="page">
+    <div className="cad-container">
       <BackBar titulo="🏷️ Etiquetas de Preço" />
-      <p style={{ opacity: .8 }}>Formato {`60 x 14 mm`} · código interno + Code 128 + QR + preço.</p>
+      <h2>🏷️ Etiquetas de Preço</h2>
+      <p style={{ opacity: .8 }}>Formato 60 x 14 mm · código interno + Code 128 + QR + preço.</p>
 
-      <div className="card" style={{ marginBottom: 12 }}>
+      <div className="cad-block">
         <h3>Adicionar por leitura</h3>
         <LeitorCodigo onCodigo={aoLer} />
-        {msg && <p className="msg">{msg}</p>}
+        {msg && <p className="cad-msg">{msg}</p>}
       </div>
 
-      <div className="card">
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
-          <input placeholder="Buscar código ou nome..." value={busca} onChange={(e) => setBusca(e.target.value)} style={{ flex: 1, minWidth: 180 }} />
+      <div className="cad-block">
+        <div className="cad-form people-form" style={{ marginBottom: 8 }}>
+          <input placeholder="Buscar código ou nome..." value={busca} onChange={(e) => setBusca(e.target.value)} />
           <select value={statusFiltro} onChange={(e) => setStatusFiltro(e.target.value)}>
             <option value="estoque">Em estoque</option>
             <option value="consignacao">Em consignação</option>
@@ -99,21 +100,21 @@ export default function Etiquetas() {
             <option value="todos">Todas</option>
           </select>
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+        <div className="btn-row" style={{ marginBottom: 8 }}>
           <button onClick={selecionarTodas}>Selecionar visíveis</button>
           <button onClick={limparSelecao}>Limpar seleção</button>
           <button className="primary" onClick={imprimir}>🖨️ Imprimir ({selIds.length})</button>
         </div>
-        <table className="tabela">
+        <table className="cad-table">
           <thead><tr><th></th><th>Código</th><th>Descrição</th><th>Preço</th><th>Status</th></tr></thead>
           <tbody>
             {listaFiltrada.map((i) => (
               <tr key={i.id}>
-                <td><input type="checkbox" checked={!!selecionados[i.id]} onChange={() => toggle(i.id)} /></td>
-                <td>{i.barcode}</td>
-                <td>{i.name || i.description || '—'}</td>
-                <td>{formatarPreco(i.price_sale)}</td>
-                <td>{i.status}</td>
+                <td data-label="Selecionar"><input type="checkbox" checked={!!selecionados[i.id]} onChange={() => toggle(i.id)} /></td>
+                <td data-label="Código">{i.barcode}</td>
+                <td data-label="Descrição">{i.name || i.description || '—'}</td>
+                <td data-label="Preço">{formatarPreco(i.price_sale)}</td>
+                <td data-label="Status">{i.status}</td>
               </tr>
             ))}
             {!listaFiltrada.length && <tr><td colSpan={5}>Nenhuma peça encontrada.</td></tr>}

@@ -155,7 +155,7 @@ export default function Vendas() {
             </select>
           </label>
           <input placeholder="Observações" value={notes} onChange={(e) => setNotes(e.target.value)} />
-          <div style={{ fontSize: 20, fontWeight: 700 }}>TOTAL: R$ {total.toFixed(2)}</div>
+          <div className="sale-total">TOTAL: R$ {total.toFixed(2)}</div>
           <button type="submit" disabled={saving || !cart.length}>
             {saving ? 'Registrando…' : `Finalizar Venda (${cart.length})`}
           </button>

@@ -117,7 +117,7 @@ function Usuarios() {
       </form>
 
       <h3>Usuários cadastrados</h3>
-      <table width="100%" cellPadding={8} style={{ borderCollapse: 'collapse' }} className="cad-table">
+      <table className="cad-table">
         <thead>
           <tr style={{ textAlign: 'left', borderBottom: '2px solid #ccc' }}>
             <th>E-mail</th><th>Nível de acesso</th><th></th>

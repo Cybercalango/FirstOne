@@ -222,7 +222,7 @@ export default function Consignacoes() {
           <label>Valor de R$ <input type="number" min="0" step="0.01" value={fValDe} onChange={(e) => setFValDe(e.target.value)} /></label>
           <label>até R$ <input type="number" min="0" step="0.01" value={fValAte} onChange={(e) => setFValAte(e.target.value)} /></label>
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+        <div className="btn-row" style={{ marginTop: 8 }}>
           <button onClick={() => load()}>🔍 Pesquisar</button>
           <button onClick={limparFiltros}>❌ Limpar filtros</button>
           <button onClick={() => setShowNova(!showNova)}>➕ Inserir consignação</button>
@@ -266,11 +266,13 @@ export default function Consignacoes() {
                 <td data-label="Valor">R$ {cValor(c.id).toFixed(2)}</td>
                 <td data-label="Status">{c.status === 'ativa' ? '🟢 Ativa' : c.status === 'cancelada' ? '🚫 Cancelada' : '⚪ Encerrada'}</td>
                 <td data-label="Ações">
-                  <button onClick={() => setSelC(c.id)}>Selecionar</button>
-                  <button onClick={() => printRomaneio(c)}>🖨 Romaneio</button>
-                  {c.status === 'ativa' && cPend(c.id).length > 0 && <button onClick={() => chargePending(c)}>💰 Acerto</button>}
-                  {c.status === 'ativa' && <button onClick={() => closeConsignment(c)}>Encerrar</button>}
-                  {c.status === 'ativa' && <button onClick={() => cancelConsignment(c)}>Cancelar</button>}
+                  <div className="btn-group">
+                    <button onClick={() => setSelC(c.id)}>Selecionar</button>
+                    <button onClick={() => printRomaneio(c)}>🖨 Romaneio</button>
+                    {c.status === 'ativa' && cPend(c.id).length > 0 && <button onClick={() => chargePending(c)}>💰 Acerto</button>}
+                    {c.status === 'ativa' && <button onClick={() => closeConsignment(c)}>Encerrar</button>}
+                    {c.status === 'ativa' && <button onClick={() => cancelConsignment(c)}>Cancelar</button>}
+                  </div>
                 </td>
               </tr>
             ))}
@@ -308,15 +310,17 @@ export default function Consignacoes() {
                   <td data-label="Descrição">{it?.description || '—'}</td>
                   <td data-label="Valor">R$ {Number(it?.price_sale || 0).toFixed(2)}</td>
                   <td data-label="Ações">
-                    <button onClick={() => returnItem(x)}>↩ Devolver</button>
-                    <button onClick={() => removePendingItem(x)}>✕ Remover</button>
+                    <div className="btn-group">
+                      <button onClick={() => returnItem(x)}>↩ Devolver</button>
+                      <button onClick={() => removePendingItem(x)}>✕ Remover</button>
+                    </div>
                   </td>
                 </tr>); })}
               {!detailItems.length && <tr><td colSpan={4}>Nenhuma peça pendente.</td></tr>}
             </tbody>
           </table>
 
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
+          <div className="btn-row" style={{ marginTop: 12 }}>
             <button onClick={() => printRomaneio(selObj)}>🖨 Romaneio</button>
             {selObj.status === 'ativa' && detailItems.length > 0 && <button onClick={() => chargePending(selObj)}>💰 Acerto (cobrar não devolvidas)</button>}
             <button onClick={() => setSelC(null)}>Fechar seleção</button>
