@@ -82,6 +82,10 @@
   font-size: 0.9rem;
   text-decoration: underline;
   padding: 0;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .link-btn:hover {

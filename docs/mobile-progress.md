@@ -1,24 +1,19 @@
-# Bloco 5 e 6 — status
+# Bloco final de refinamento mobile
 
-Status: concluído em documentação e checklist de validação
+Status: concluído
 
 Resumo:
-- A validação mobile foi documentada com checklist prático para o app.
-- Foi adicionado um guia de performance e verificação para uso local e em URL pública.
-- Esses passos não exigem credenciais de rede nem alteração de lógica, e servem como base para a etapa final de produção.
+- Ajustei detalhes finais de ergonomia mobile em login, dashboard e navegação.
+- Para telas pequenas, aumentei a área de toque dos botões e melhoramos a leitura dos blocos e tabelas.
+- Mantivemos a lógica do sistema intacta e priorizamos melhoria visual sem alterar regras de negócio.
 
 Arquivos alterados:
-- `README.md`
-- `docs/mobile-progress.md`
-- `docs/mobile-performance-checklist.md`
+- `src/Login.css`
+- `src/Dashboard.css`
 
-Checklist de validação sugerido:
-- validar login e dashboard em 360x640 e 390x844
-- testar telas de cadastro e gestão em mobile
-- verificar ausência de scroll horizontal
-- confirmar que botões e campos têm altura confortável para toque
-- rodar build do projeto (`npm run build`)
-- rodar auditoria com Lighthouse (`npx lighthouse ...`)
+Ponto de pausa:
+- O projeto está em um estado muito melhor para manter o fluxo em celular.
+- O próximo passo recomendado é validar em um aparelho real ou em emulador e ajustar somente itens de UX pendentes observados no ambiente real.
 
 Observação:
-- O ambiente disponível aqui não permite executar Lighthouse diretamente sem browser/URL em execução, então a validação foi documentada e pronta para execução local em seu ambiente.
+- Esta é uma etapa final de refinamento; não mexe na infraestrutura nem nas regras de negócio.
