@@ -10,6 +10,7 @@ import Consignacoes from './pages/Consignacoes';
 import Movimentacoes from './pages/Movimentacoes';
 import Vendas from './pages/Vendas';
 import Relatorios from './pages/Relatorios';
+import Etiquetas from './pages/Etiquetas';
 import './App.css';
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
         <Route path="/movimentacoes" element={<Movimentacoes />} />
         <Route path="/vendas" element={<Vendas />} />
         <Route path="/relatorios" element={<Relatorios />} />
+        <Route path="/etiquetas" element={<Etiquetas />} />
         <Route path="/" element={<Navigate to="/login" />} />
       </Routes>
     </Router>

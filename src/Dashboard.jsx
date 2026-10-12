@@ -104,6 +104,13 @@ function Dashboard() {
           </div>
 
           {(userRole === 'administrador' || userRole === 'gerente') && (
+            <div className="menu-item clickable" onClick={() => navigate('/etiquetas')}>
+              <h3>🏷️ Etiquetas</h3>
+              <p>Gerar e imprimir etiquetas com código de barras e QR</p>
+            </div>
+          )}
+
+          {(userRole === 'administrador' || userRole === 'gerente') && (
             <div className="menu-item clickable" onClick={() => navigate('/cadastros')}>
               <h3>🗂️ Cadastros Base — Produtos</h3>
               <p>Variantes, tipos, grades de tamanho e modelos de joia</p>
