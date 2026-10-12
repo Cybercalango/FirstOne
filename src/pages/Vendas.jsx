@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import BackBar from '../components/BackBar';
+import LeitorCodigo from '../components/LeitorCodigo';
 import { supabase } from '../supabaseClient';
 
 // PDV: seleciona peças em estoque, exibe a lista com cobrança e registra a venda.
@@ -37,6 +38,15 @@ export default function Vendas() {
   };
 
   const removeItem = (id) => setCart(cart.filter((c) => c.id !== id));
+
+  // Chamado pelo LeitorCodigo (câmera ou leitor USB/teclado)
+  const handleCodigoLido = (codigo) => {
+    const alvo = available.find((i) => i.barcode && String(i.barcode).replace(/[\s-]/g, '') === codigo);
+    if (!alvo) { setMsg(`Código ${codigo} válido, mas nenhuma peça em estoque o possui.`); return; }
+    if (cart.some((c) => c.id === alvo.id)) { setMsg('Peça já está na lista.'); return; }
+    setCart([...cart, alvo]);
+    setMsg('');
+  };
 
   const newCustomer = async () => {
     const name = window.prompt('Nome do novo cliente:');
@@ -94,6 +104,8 @@ export default function Vendas() {
 
       <div className="cad-block">
         <h3>Selecionar peça em estoque</h3>
+        <LeitorCodigo onCodigo={handleCodigoLido} />
+        <p style={{margin:'8px 0', color:'#666', fontSize:13}}>ou busque manualmente:</p>
         <div className="cad-form people-form">
           <select onChange={(e) => { addItem(e.target.value); e.target.value = ''; }} defaultValue="">
             <option value="" disabled>Buscar peça… ({available.length} disponíveis)</option>

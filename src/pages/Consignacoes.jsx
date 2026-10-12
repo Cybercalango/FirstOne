@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import BackBar from '../components/BackBar';
+import LeitorCodigo from '../components/LeitorCodigo';
 import { supabase } from '../supabaseClient';
 
 // Consignação: remessa formal de peças a um parceiro/vendedor, com prazo e baixa de devoluções
@@ -12,6 +13,15 @@ export default function Consignacoes() {
   const [selC, setSelC] = useState(null);
   const [nc, setNc] = useState({ consignor_id: '', due_date: '', notes: '' });
   const [addItemId, setAddItemId] = useState('');
+
+  // Leitura por código: seleciona a peça em estoque para adicionar à consignação
+  const handleCodigoLido = (codigo) => {
+    const alvo = items.find((i) => i.barcode && String(i.barcode).replace(/[\s-]/g, '') === codigo);
+    if (!alvo) { setMsg(`Código ${codigo} válido, mas nenhuma peça cadastrada o possui.`); return; }
+    if (alvo.status !== 'estoque') { setMsg(`Peça ${codigo} está com status "${alvo.status}", não disponível em estoque.`); return; }
+    setAddItemId(String(alvo.id));
+    setMsg(`Peça ${codigo} selecionada para a consignação.`);
+  };
 
   const load = async () => {
     const [co, ci, pe, im] = await Promise.all([
@@ -135,6 +145,7 @@ export default function Consignacoes() {
       {selC && (
         <div className="cad-block">
           <h3>Adicionar peças à Consignação #{selC}</h3>
+          <LeitorCodigo onCodigo={handleCodigoLido} />
           <form onSubmit={addToConsignment} className="cad-form people-form">
             <select value={addItemId} onChange={(e) => setAddItemId(e.target.value)}>
               <option value="">Selecionar peça em estoque…</option>

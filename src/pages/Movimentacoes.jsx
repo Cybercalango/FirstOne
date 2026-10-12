@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import BackBar from '../components/BackBar';
+import LeitorCodigo from '../components/LeitorCodigo';
 import { supabase } from '../supabaseClient';
 
 // Entrada e saída de estoque (empréstimo/devolução a vendedores e parceiros)
@@ -43,6 +44,14 @@ export default function Movimentacoes() {
     load();
   };
 
+  // Leitura por código: seleciona a peça correspondente no formulário
+  const handleCodigoLido = (codigo) => {
+    const alvo = items.find((i) => i.barcode && String(i.barcode).replace(/[\s-]/g, '') === codigo);
+    if (!alvo) { setMsg(`Código ${codigo} válido, mas nenhuma peça cadastrada o possui.`); return; }
+    setMv({ ...mv, item_id: String(alvo.id) });
+    setMsg(`Peça ${codigo} selecionada (${alvo.status}).`);
+  };
+
   const itemName = (id) => {
     const it = items.find((x) => x.id === id);
     return it ? `${it.barcode || 'ID ' + it.id}` : '—';
@@ -60,6 +69,7 @@ export default function Movimentacoes() {
             <option value="saida">Saída (emprestar peça)</option>
             <option value="entrada">Entrada (devolução ao estoque)</option>
           </select>
+          <LeitorCodigo onCodigo={handleCodigoLido} />
           <select value={mv.item_id} onChange={(e) => setMv({ ...mv, item_id: e.target.value })}>
             <option value="">Selecionar peça…</option>
             {available.map((i) => (
