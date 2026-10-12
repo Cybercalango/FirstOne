@@ -8,15 +8,14 @@
   --accent-bg: rgba(170, 59, 255, 0.1);
   --accent-border: rgba(170, 59, 255, 0.5);
   --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  --shadow: rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
 
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
   --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
+  font: 16px/1.5 var(--sans);
+  letter-spacing: 0.12px;
   color-scheme: light dark;
   color: var(--text);
   background: var(--bg);
@@ -24,42 +23,23 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
+  min-width: 320px;
+  background: var(--bg);
 }
 
 #root {
-  width: 1126px;
+  width: 100%;
   max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
+  margin: 0;
+  text-align: left;
   min-height: 100svh;
   display: flex;
   flex-direction: column;
@@ -74,23 +54,19 @@ h2 {
 }
 
 h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+  margin: 1.25rem 0;
 }
+
 h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
+  font-size: clamp(1.35rem, 4vw, 2rem);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.5rem;
 }
+
 p {
   margin: 0;
 }
@@ -104,23 +80,85 @@ code,
 }
 
 code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
+  font-size: 0.95rem;
+  line-height: 1.35;
+  padding: 0.25rem 0.5rem;
   background: var(--code-bg);
 }
 
-/* === Formulário de pessoas em blocos === */
-.person-blocks { display: flex; flex-direction: column; gap: 14px; }
-.person-fieldset { border: 1px solid #d8c9a3; border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; background: #fffdf7; }
-.person-fieldset legend { font-weight: 700; color: #8a6d1f; padding: 0 6px; font-size: .95rem; }
-.person-fieldset input { width: 100%; box-sizing: border-box; }
-.person-label { display: flex; flex-direction: column; gap: 4px; font-size: .85rem; color: #555; }
-.person-checks { display: flex; gap: 16px; flex-wrap: wrap; }
-.person-cep-row { display: flex; gap: 8px; align-items: center; }
-.person-cep-row input { max-width: 160px; }
-.person-row-3 { display: flex; gap: 8px; }
-.person-row-3 input { flex: 1; }
-.person-actions { display: flex; gap: 8px; }
-.cad-msg.erro { color: #b3261e; font-weight: 600; }
-@media (max-width: 600px) { .person-row-3 { flex-direction: column; } }
+.person-blocks {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.person-fieldset {
+  border: 1px solid #d8c9a3;
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #fffdf7;
+}
+
+.person-fieldset legend {
+  font-weight: 700;
+  color: #8a6d1f;
+  padding: 0 6px;
+  font-size: 0.95rem;
+}
+
+.person-fieldset input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.person-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.person-checks {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.person-cep-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.person-cep-row input {
+  max-width: 160px;
+}
+
+.person-row-3 {
+  display: flex;
+  gap: 8px;
+}
+
+.person-row-3 input {
+  flex: 1;
+}
+
+.person-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.cad-msg.erro {
+  color: #b3261e;
+  font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  .person-row-3 {
+    flex-direction: column;
+  }
+}

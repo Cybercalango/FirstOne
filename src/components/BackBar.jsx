@@ -8,12 +8,20 @@ export default function BackBar({ title }) {
   const navigate = useNavigate();
 
   return (
-    <div className="back-bar" style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+    <div className="back-bar" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 12 }}>
       <button
         type="button"
         onClick={() => navigate(-1)}
         className="btn-back"
-        style={{ padding: '8px 14px', borderRadius: 6, border: '1px solid #ccc', background: '#fff', cursor: 'pointer' }}
+        style={{
+          padding: '10px 14px',
+          minHeight: 44,
+          borderRadius: 6,
+          border: '1px solid #ccc',
+          background: '#fff',
+          cursor: 'pointer',
+          fontSize: 15,
+        }}
       >
         ← Voltar
       </button>
@@ -21,7 +29,15 @@ export default function BackBar({ title }) {
         type="button"
         onClick={() => navigate('/')}
         className="btn-home"
-        style={{ padding: '8px 14px', borderRadius: 6, border: '1px solid #ccc', background: '#f5f5f5', cursor: 'pointer' }}
+        style={{
+          padding: '10px 14px',
+          minHeight: 44,
+          borderRadius: 6,
+          border: '1px solid #ccc',
+          background: '#f5f5f5',
+          cursor: 'pointer',
+          fontSize: 15,
+        }}
       >
         🏠 Menu
       </button>

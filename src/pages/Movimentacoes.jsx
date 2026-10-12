@@ -33,7 +33,6 @@ export default function Movimentacoes() {
       type: mv.type, quantity: 1, notes: mv.notes || null, user_id: userId,
     }]);
     if (error) { setMsg('Erro: ' + error.message); return; }
-    // Atualiza status do item via função que grava histórico
     const newStatus = mv.type === 'saida' ? 'emprestado' : 'estoque';
     const { error: err2 } = await supabase.rpc('set_item_status', {
       p_item_id: Number(mv.item_id), p_to_status: newStatus, p_reason: mv.type,
@@ -86,11 +85,11 @@ export default function Movimentacoes() {
           <tbody>
             {movements.map((m) => (
               <tr key={m.id}>
-                <td>{new Date(m.created_at).toLocaleString('pt-BR')}</td>
-                <td>{m.type === 'saida' ? '⬆️ Saída' : '⬇️ Entrada'}</td>
-                <td>{itemName(m.item_id)}</td>
-                <td>{personName(m.person_id)}</td>
-                <td>{m.notes || '—'}</td>
+                <td data-label="Data">{new Date(m.created_at).toLocaleString('pt-BR')}</td>
+                <td data-label="Tipo">{m.type === 'saida' ? '⬆️ Saída' : '⬇️ Entrada'}</td>
+                <td data-label="Peça">{itemName(m.item_id)}</td>
+                <td data-label="Responsável">{personName(m.person_id)}</td>
+                <td data-label="Obs.">{m.notes || '—'}</td>
               </tr>
             ))}
           </tbody>

@@ -1,16 +1,143 @@
-# React + Vite
+# FirstOne
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Aplicação web para gestão de joias, estoque, pessoas, consignações e movimentações internas, construída com React + Vite + Supabase.
 
-Currently, two official plugins are available:
+## Visão geral
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+O projeto gerencia:
+- cadastro de produtos e modelos
+- cadastro de pessoas (clientes, vendedores, consignatários)
+- consignações
+- movimentações de entrada/saída de estoque
+- autenticação por perfil (administrador, gerente, vendedor)
 
-## React Compiler
+## Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- React 19
+- Vite 8
+- Supabase JS
+- SQL para estrutura/roles/policies
 
-## Expanding the Oxlint configuration
+## Pré-requisitos
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+- Node.js 18+
+- npm
+- um projeto Supabase com URL e anon key válidos
+
+## Configuração local
+
+1. Clone o projeto
+2. Instale as dependências:
+   ```bash
+   npm install
+   ```
+3. Crie um arquivo `.env.local` a partir do exemplo:
+   ```bash
+   cp .env.example .env.local
+   ```
+4. Preencha as variáveis do Supabase:
+   ```env
+   VITE_SUPABASE_URL=https://SEU_PROJETO.supabase.co
+   VITE_SUPABASE_ANON_KEY=SEU_ANON_KEY
+   ```
+5. Inicie o projeto:
+   ```bash
+   npm run dev
+   ```
+
+## Scripts disponíveis
+
+```bash
+npm run dev      # inicia o ambiente de desenvolvimento
+npm run build    # gera build de produção
+npm run preview  # visualiza o build localmente
+npm run lint     # valida com oxlint
+```
+
+## Estrutura do projeto
+
+```text
+public/          arquivos públicos e assets estáticos
+sql/             scripts SQL de criação e correção de estrutura
+src/
+  components/    componentes reutilizáveis
+  pages/         telas do sistema
+  App.jsx        roteamento principal
+  Dashboard.jsx  painel principal
+  Login.jsx      autenticação e criação de conta
+  supabaseClient.js  cliente Supabase
+index.html       entrada do Vite
+```
+
+## Banco de dados e autenticação
+
+Os scripts em `sql/` foram utilizados para configurar:
+- perfis
+- políticas de acesso
+- tipos e modelos de produtos
+- consignações e movimentações
+- pessoas e endereços
+
+Importante:
+- Nunca commite chaves reais no repositório.
+- Sempre utilize `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` via ambiente local ou do deploy.
+- As políticas RLS do Supabase devem ser revisadas antes de abrir o sistema para uso real.
+
+## Fluxo do sistema
+
+1. A tela de login cria ou valida o usuário no Supabase.
+2. O perfil do usuário é lido em `profiles` e define a permissão.
+3. O dashboard habilita módulos conforme o perfil do usuário.
+4. As páginas de cadastro e gestão acessam os dados no Supabase.
+
+## Validação mobile e performance
+
+Antes de produção, valide em um celular real ou em emulador com as telas abaixo:
+
+- login
+- dashboard
+- pessoas
+- produtos
+- consignações
+- movimentações
+- usuários
+
+Checklist mínimo:
+- botões com toque confortável
+- inputs sem zoom forçado
+- sem scroll horizontal
+- textos legíveis em telas pequenas
+- mensagens de erro visíveis
+- menus e ações acessíveis
+
+Comandos úteis:
+
+```bash
+npm install
+npm run build
+npm run preview -- --host 0.0.0.0
+```
+
+Depois, teste em DevTools/Responsive Mode com:
+- 360x640
+- 390x844
+- 768x1024
+
+Para uma auditoria mais forte, rode:
+
+```bash
+npx lighthouse http://localhost:4173 --only-categories=performance,accessibility,best-practices,seo
+```
+
+## Observações importantes
+
+- O projeto ainda está em evolução e algumas partes do banco foram ajustadas por scripts de correção.
+- A parte visual mobile foi melhorada, mas vale verificar em dispositivos reais antes de produção.
+- Acompanhe também a documentação interna em `docs/mobile-progress.md` para o estado atual das melhorias responsivas.
+
+## Próximos passos recomendados
+
+- revisar regras de segurança no Supabase
+- validar telas em dispositivo real
+- testar Lighthouse mobile
+- consolidar a documentação final para uso operacional

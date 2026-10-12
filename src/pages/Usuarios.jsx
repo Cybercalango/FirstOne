@@ -13,7 +13,6 @@ function Usuarios() {
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState('');
 
-  // Alterar a própria senha
   const [novaSenha, setNovaSenha] = useState('');
   const [msgSenha, setMsgSenha] = useState('');
 
@@ -37,7 +36,6 @@ function Usuarios() {
     setLoading(true);
     setMsg('');
     try {
-      // 1. Cria o usuário de autenticação (login + senha)
       const { data, error } = await supabase.auth.signUp({
         email,
         password: senha,
@@ -46,7 +44,6 @@ function Usuarios() {
       if (error) throw error;
 
       if (data.user) {
-        // 2. Cria o perfil com o nível de acesso escolhido
         const { error: errPerfil } = await supabase.from('profiles').insert({
           id: data.user.id,
           email,
@@ -120,7 +117,7 @@ function Usuarios() {
       </form>
 
       <h3>Usuários cadastrados</h3>
-      <table width="100%" cellPadding={8} style={{ borderCollapse: 'collapse' }}>
+      <table width="100%" cellPadding={8} style={{ borderCollapse: 'collapse' }} className="cad-table">
         <thead>
           <tr style={{ textAlign: 'left', borderBottom: '2px solid #ccc' }}>
             <th>E-mail</th><th>Nível de acesso</th><th></th>
@@ -129,15 +126,15 @@ function Usuarios() {
         <tbody>
           {usuarios.map((u) => (
             <tr key={u.id} style={{ borderBottom: '1px solid #eee' }}>
-              <td>{u.email}</td>
-              <td>
+              <td data-label="E-mail">{u.email}</td>
+              <td data-label="Nível de acesso">
                 <select value={u.role} onChange={(e) => alterarRole(u.id, e.target.value)} disabled={u.id === userId}>
                   <option value="administrador">Administrador</option>
                   <option value="gerente">Gerente</option>
                   <option value="vendedor">Vendedor</option>
                 </select>
               </td>
-              <td>
+              <td data-label="Ações">
                 {u.id !== userId && (
                   <button onClick={() => removerUsuario(u.id)}>Remover</button>
                 )}
