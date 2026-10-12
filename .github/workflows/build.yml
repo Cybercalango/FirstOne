@@ -18,8 +18,8 @@ jobs:
         run: npm ci
       - name: Build
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.FISTONESECRET_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.FISRTONESECRET_ANON }}
         run: npm run build
       - name: Upload artifact
         uses: actions/upload-artifact@v4
