@@ -75,11 +75,11 @@ export default function Pessoas() {
           <tbody>
             {rows.map((p) => (
               <tr key={p.id}>
-                <td>{p.name}{p.cpf_cnpj ? ` · ${p.cpf_cnpj}` : ''}</td>
-                <td>{p.phone} {p.email && `· ${p.email}`}</td>
-                <td>{p.address || '—'}</td>
-                <td>{[p.is_client && 'Cliente', p.is_consignor && 'Vendedor/Consignatário'].filter(Boolean).join(', ')}</td>
-                <td>
+                <td data-label="Nome">{p.name}{p.cpf_cnpj ? ` · ${p.cpf_cnpj}` : ''}</td>
+                <td data-label="Contato">{p.phone} {p.email && `· ${p.email}`}</td>
+                <td data-label="Endereço">{p.address || '—'}</td>
+                <td data-label="Papel">{[p.is_client && 'Cliente', p.is_consignor && 'Vendedor/Consignatário'].filter(Boolean).join(', ')}</td>
+                <td data-label="Ações">
                   <button className="edit-btn" onClick={() => edit(p)} style={{ marginRight: 6 }}>✏️</button>
                   <button className="del-btn" onClick={() => remove(p.id)}>✕</button>
                 </td>

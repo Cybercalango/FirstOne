@@ -221,8 +221,6 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 0.9rem;
-  display: block;
-  overflow-x: auto;
 }
 
 .cad-table th,
@@ -230,7 +228,6 @@
   text-align: left;
   padding: 0.5rem;
   border-bottom: 1px solid #eee;
-  white-space: nowrap;
 }
 
 .cad-msg {
@@ -262,6 +259,49 @@
 
 .person-actions button {
   flex: 1 1 180px;
+}
+
+@media (max-width: 767px) {
+  .cad-table,
+  .cad-table thead,
+  .cad-table tbody,
+  .cad-table th,
+  .cad-table td,
+  .cad-table tr {
+    display: block;
+  }
+
+  .cad-table thead {
+    display: none;
+  }
+
+  .cad-table tbody {
+    width: 100%;
+  }
+
+  .cad-table tr {
+    border: 1px solid #eee;
+    border-radius: 10px;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    background: #fff;
+  }
+
+  .cad-table td {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.75rem;
+    border: none;
+    padding: 0.3rem 0;
+    white-space: normal;
+  }
+
+  .cad-table td::before {
+    content: attr(data-label);
+    font-weight: 700;
+    color: #555;
+    min-width: 110px;
+  }
 }
 
 @media (min-width: 600px) {

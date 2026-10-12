@@ -122,13 +122,13 @@ export default function Consignacoes() {
               const pend = cItems.filter((x) => x.consignment_id === c.id && !x.returned).length;
               return (
                 <tr key={c.id}>
-                  <td>{c.id}</td>
-                  <td>{personName(c.consignor_id)}</td>
-                  <td>{c.start_date}</td>
-                  <td>{c.due_date || '—'}</td>
-                  <td>{pend}/{total} em poder</td>
-                  <td>{c.status === 'ativa' ? '🟢 Ativa' : '⚪ Encerrada'}</td>
-                  <td>
+                  <td data-label="#">{c.id}</td>
+                  <td data-label="Parceiro">{personName(c.consignor_id)}</td>
+                  <td data-label="Início">{c.start_date}</td>
+                  <td data-label="Prazo">{c.due_date || '—'}</td>
+                  <td data-label="Peças">{pend}/{total} em poder</td>
+                  <td data-label="Status">{c.status === 'ativa' ? '🟢 Ativa' : '⚪ Encerrada'}</td>
+                  <td data-label="Ações">
                     <button onClick={() => setSelC(c.id)}>Ver/Adicionar</button>
                     {c.status === 'ativa' && <button onClick={() => closeConsignment(c)}>Encerrar</button>}
                   </td>
@@ -147,8 +147,8 @@ export default function Consignacoes() {
             <tbody>
               {detailItems.map((x) => (
                 <tr key={x.id}>
-                  <td>{itemLabel(x.item_id)}</td>
-                  <td><button onClick={() => returnItem(x)}>Registrar Devolução</button></td>
+                  <td data-label="Peça">{itemLabel(x.item_id)}</td>
+                  <td data-label="Ação"><button onClick={() => returnItem(x)}>Registrar Devolução</button></td>
                 </tr>
               ))}
               {!detailItems.length && <tr><td colSpan={2}>Nenhuma peça pendente.</td></tr>}

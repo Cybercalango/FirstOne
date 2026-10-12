@@ -184,10 +184,10 @@ function Models() {
         <tbody>
           {models.map((m) => (
             <tr key={m.id}>
-              <td>{m.name}</td>
-              <td>{typeName(m.type_id)}</td>
-              <td>{gridName(m.default_grid_id)}</td>
-              <td><button className="del-btn" onClick={() => remove(m.id)}>✕</button></td>
+              <td data-label="Modelo">{m.name}</td>
+              <td data-label="Tipo">{typeName(m.type_id)}</td>
+              <td data-label="Grade">{gridName(m.default_grid_id)}</td>
+              <td data-label="Ações"><button className="del-btn" onClick={() => remove(m.id)}>✕</button></td>
             </tr>
           ))}
           {models.length === 0 && <tr><td colSpan="4">Nenhum modelo cadastrado ainda.</td></tr>}
