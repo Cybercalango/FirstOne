@@ -1,24 +1,21 @@
-# Bloco 3 — status
+# Bloco 4 — status
 
 Status: concluído
 
 Resumo:
-- Converti a base das tabelas para um layout mais legível em telas pequenas.
-- Em celulares, as linhas passam a funcionar como blocos com rótulos visíveis, reduzindo o efeito de scroll horizontal.
-- Mantive a lógica do app intacta e os dados continuam sendo renderizados da mesma forma.
+- Removi o uso de chave pública embutida do cliente Supabase.
+- Passei a exigir que as variáveis de ambiente sejam fornecidas explicitamente.
+- Criei um arquivo `.env.example` para documentação do setup.
+- Atualizei o `README.md` para refletir o projeto real em vez do template Vite.
 
 Arquivos alterados:
-- `src/Dashboard.css`
-- `src/pages/Cadastros.jsx`
-- `src/pages/Produtos.jsx`
-- `src/pages/Pessoas.jsx`
-- `src/pages/Consignacoes.jsx`
-- `src/pages/Movimentacoes.jsx`
-- `src/pages/Usuarios.jsx`
+- `src/supabaseClient.js`
+- `README.md`
+- `.env.example`
 
 Ponto de pausa:
-- O projeto foi deixado em estado seguro para continuar para o próximo bloco.
-- Próximo bloco recomendado: revisão de performance + segurança do Supabase + documentação de setup.
+- O app está em estado seguro para continuar, mas ainda requer configuração real do Supabase no ambiente de execução.
+- Próximo bloco recomendado: testes de mobilidade real e revisão de performance.
 
 Observação:
-- A mudança foi pensada para melhorar a leitura em telas pequenas sem mexer no fluxo de dados do app.
+- Não foi incluída nenhuma chave real nem segredo. A aplicação agora exige configuração explícita via ambiente.
