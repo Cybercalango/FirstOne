@@ -29,11 +29,13 @@ export default function Produtos() {
   const pesquisar = async (codigoForcado) => {
     const texto = (codigoForcado !== undefined ? codigoForcado : qTexto).trim();
     setPesquisando(true);
-    let query = supabase.from('items').select('*').order('id', { ascending: false }).limit(200);
+    let query = supabase.from('items')
+      .select('*, models(name)')
+      .order('id', { ascending: false }).limit(200);
     if (texto) {
       // busca por código interno (exato ou parcial), aceita também com pontos/dashes
       const limpo = texto.replace(/[\s.-]/g, '');
-      query = query.or(`barcode.eq.${texto},barcode.like.${limpo}*,barcode.like.${limpo}*`);
+      query = query.or(`barcode.eq.${texto},barcode.like.${limpo}*,barcode.like.${limpo}*,models.name.ilike.%${texto}%`);
     }
     if (qModelo) query = query.eq('model_id', Number(qModelo));
     if (qVariacao) query = query.eq('variant_id', Number(qVariacao));
@@ -78,7 +80,7 @@ export default function Produtos() {
       supabase.from('size_grids').select('*').order('name'),
       supabase.from('grid_sizes').select('*').order('id'),
       supabase.from('people').select('*').order('name'),
-      supabase.from('items').select('*').order('id', { ascending: false }),
+      supabase.from('items').select('*, models(name)').order('id', { ascending: false }),
     ]);
     setModels(mo.data || []); setTypes(ty.data || []); setVariants(va.data || []);
     setGrids(gr.data || []); setGridSizes(gs.data || []); setPeople(pe.data || []); setItems(im.data || []);
@@ -234,7 +236,7 @@ export default function Produtos() {
                   {resultados.map((i) => (
                     <tr key={i.id}>
                       <td data-label="Código">{i.barcode || '#' + i.id}</td>
-                      <td data-label="Modelo">{modelName(i.model_id)}</td>
+                      <td data-label="Modelo">{(i.models && i.models.name) || modelName(i.model_id)}</td>
                       <td data-label="Variação">{variantName(i.variant_id)}</td>
                       <td data-label="Tam.">{i.size || '—'}</td>
                       <td data-label="Venda">{i.price_sale ? `R$ ${Number(i.price_sale).toFixed(2)}` : '—'}</td>
@@ -256,7 +258,7 @@ export default function Produtos() {
             {items.map((i) => (
               <tr key={i.id}>
                 <td data-label="Código">{i.barcode || i.id}</td>
-                <td data-label="Modelo">{modelName(i.model_id)}</td>
+                <td data-label="Modelo">{(i.models && i.models.name) || modelName(i.model_id)}</td>
                 <td data-label="Variação">{variantName(i.variant_id)}</td>
                 <td data-label="Tam.">{i.size || '—'}</td>
                 <td data-label="Venda">{i.price_sale ? `R$ ${Number(i.price_sale).toFixed(2)}` : '—'}</td>
