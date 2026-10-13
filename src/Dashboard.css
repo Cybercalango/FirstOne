@@ -434,3 +434,48 @@
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   }
 }
+
+/* ===== Vendas (PDV) — mobile-first ===== */
+.venda-results {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+  border: 1px solid #eee;
+  border-radius: 8px;
+}
+.venda-results li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid #f0f0f0;
+}
+.venda-results li:last-child { border-bottom: none; }
+.venda-results li span { display: flex; flex-direction: column; font-size: 0.95rem; color: #1c1a20; }
+.venda-results li small { color: #666; font-size: 0.8rem; }
+.venda-results li.empty { color: #666; justify-content: center; }
+.venda-results button {
+  min-height: 40px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.sale-receipt {
+  background: #e8f5e9;
+  border: 1px solid #a5d6a7;
+  color: #1b5e20;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  font-size: 0.95rem;
+}
+.sale-receipt button {
+  margin-top: 8px;
+  background-color: #2e7d32 !important;
+  color: #fff !important;
+  min-height: 40px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}

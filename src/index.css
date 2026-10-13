@@ -16,7 +16,10 @@
 
   font: 16px/1.5 var(--sans);
   letter-spacing: 0.12px;
-  color-scheme: light dark;
+  /* Mobile-first: o sistema usa SEMPRE o tema claro.
+     Sem isso, celulares/computadores em modo escuro deixavam botões
+     com fundo branco e texto branco (herdado do template Vite). */
+  color-scheme: light only;
   color: var(--text);
   background: var(--bg);
   font-synthesis: none;
@@ -162,3 +165,46 @@ code {
     flex-direction: column;
   }
 }
+
+/* ============================================================
+   CORREÇÃO GLOBAL DE LEGIBILIDADE (mobile-first)
+   Força fundo claro + texto escuro em TODOS os botões, campos
+   e selects do sistema. Elimina de vez o problema de botões com
+   fundo branco e fonte branca (herdado do template Vite / modo
+   escuro do navegador). Regras específicas (.cad-form button,
+   .btn-danger etc.) continuam valendo por especificidade.
+   ============================================================ */
+html, body { background: #ffffff; color: #1c1a20; }
+
+button:not(.del-btn):not(.chip button):not(.link-btn) {
+  background-color: #b8860b;
+  color: #ffffff;
+  border: 1px solid transparent;
+}
+button:not(:disabled):hover { filter: brightness(0.95); }
+button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+input, select, textarea {
+  background-color: #ffffff !important;
+  color: #1c1a20 !important;
+  border: 1px solid #ccc;
+}
+input::placeholder, textarea::placeholder { color: #7a7580; }
+
+label { color: #1c1a20; }
+
+/* Botões utilitários claros (Voltar / Menu / Pesquisar fechar) */
+.btn-back, .btn-home {
+  background-color: #f2f1f4 !important;
+  color: #1c1a20 !important;
+  border: 1px solid #ccc !important;
+}
+
+/* Botões de perigo (Excluir / Cancelar) — vermelho legível */
+.btn-danger, button.cancel-btn {
+  background-color: #c0392b !important;
+  color: #ffffff !important;
+}
+
+/* Links de ação */
+.link-btn { color: #b8860b; background: none; }

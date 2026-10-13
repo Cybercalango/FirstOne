@@ -1,19 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import BackBar from '../components/BackBar';
 import LeitorCodigo from '../components/LeitorCodigo';
 import { supabase } from '../supabaseClient';
 
-// PDV: seleciona peças em estoque, exibe a lista com cobrança e registra a venda.
+// PDV mobile-first: leitura de etiqueta (câmera/leitor), busca de peça,
+// carrinho com listagem, cobrança e registro da venda.
 // A venda alimenta os Relatórios e dá baixa no status da peça (estoque -> vendido).
 export default function Vendas() {
   const [items, setItems] = useState([]);
   const [people, setPeople] = useState([]);
   const [cart, setCart] = useState([]);           // itens selecionados (objeto item)
+  const [busca, setBusca] = useState('');
   const [customerId, setCustomerId] = useState('');
   const [payment, setPayment] = useState('dinheiro');
   const [notes, setNotes] = useState('');
   const [msg, setMsg] = useState('');
   const [saving, setSaving] = useState(false);
+  const [lastSale, setLastSale] = useState(null);
 
   const load = async () => {
     const [im, pe] = await Promise.all([
@@ -28,9 +31,21 @@ export default function Vendas() {
   const available = items.filter((i) => i.status === 'estoque');
   const total = cart.reduce((s, i) => s + Number(i.price_sale || 0), 0);
 
-  const addItem = (id) => {
-    if (!id) return;
-    const it = items.find((x) => x.id === Number(id));
+  // Busca por código interno (8 dígitos), nome/descrição ou preço
+  const norm = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const results = useMemo(() => {
+    const q = norm(busca.trim());
+    if (!q) return [];
+    return available.filter((i) =>
+      (i.barcode && String(i.barcode).replace(/[\s-]/g, '').includes(q)) ||
+      norm(i.name).includes(q) ||
+      norm(i.description).includes(q) ||
+      String(i.id) === q ||
+      ('r$ ' + Number(i.price_sale || 0).toFixed(2)).includes(q)
+    ).slice(0, 12);
+  }, [busca, available]);
+
+  const addItem = (it) => {
     if (!it) return;
     if (cart.some((c) => c.id === it.id)) { setMsg('Peça já está na lista.'); return; }
     setCart([...cart, it]);
@@ -43,9 +58,8 @@ export default function Vendas() {
   const handleCodigoLido = (codigo) => {
     const alvo = available.find((i) => i.barcode && String(i.barcode).replace(/[\s-]/g, '') === codigo);
     if (!alvo) { setMsg(`Código ${codigo} válido, mas nenhuma peça em estoque o possui.`); return; }
-    if (cart.some((c) => c.id === alvo.id)) { setMsg('Peça já está na lista.'); return; }
-    setCart([...cart, alvo]);
-    setMsg('');
+    addItem(alvo);
+    setBusca('');
   };
 
   const newCustomer = async () => {
@@ -80,8 +94,10 @@ export default function Vendas() {
         if (e2) throw new Error('Item: ' + e2.message);
         await supabase.rpc('set_item_status', { p_item_id: it.id, p_to_status: 'vendido', p_reason: 'venda' });
       }
-      setMsg(`✅ Venda ${sale.code} registrada — R$ ${total.toFixed(2)}.`);
-      setCart([]); setNotes(''); 
+      const cliente = people.find((p) => String(p.id) === customerId);
+      setLastSale({ code: sale.code, total, pieces: cart.length, payment, cliente: cliente?.name || 'Sem cliente' });
+      setCart([]); setNotes('');
+      setMsg('');
     } catch (err) {
       setMsg('Erro: ' + err.message);
     } finally {
@@ -102,36 +118,52 @@ export default function Vendas() {
       <BackBar title="Vendas" />
       <h2>💰 Vendas (PDV)</h2>
 
+      {lastSale && (
+        <div className="sale-receipt">
+          <strong>✅ Venda {lastSale.code} registrada</strong><br />
+          {lastSale.pieces} peça(s) — R$ {lastSale.total.toFixed(2)} — {lastSale.payment}<br />
+          Cliente: {lastSale.cliente}
+          <button type="button" onClick={() => setLastSale(null)}>Fechar recibo</button>
+        </div>
+      )}
+
       <div className="cad-block">
         <h3>Selecionar peça em estoque</h3>
         <LeitorCodigo onCodigo={handleCodigoLido} />
-        <p style={{margin:'8px 0', color:'#666', fontSize:13}}>ou busque manualmente:</p>
-        <div className="cad-form people-form">
-          <select onChange={(e) => { addItem(e.target.value); e.target.value = ''; }} defaultValue="">
-            <option value="" disabled>Buscar peça… ({available.length} disponíveis)</option>
-            {available.map((i) => (
-              <option key={i.id} value={i.id}>
-                {i.barcode || 'ID ' + i.id} — R$ {Number(i.price_sale || 0).toFixed(2)}
-              </option>
+        <p style={{ margin: '8px 0', color: '#666', fontSize: 13 }}>ou busque manualmente ({available.length} disponíveis):</p>
+        <input
+          placeholder="Buscar por código, nome ou preço…"
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+        />
+        {busca.trim() && (
+          <ul className="venda-results">
+            {results.map((i) => (
+              <li key={i.id}>
+                <span>{i.barcode || 'ID ' + i.id} — {i.name || 'Peça'}<small>R$ {Number(i.price_sale || 0).toFixed(2)}</small></span>
+                <button type="button" onClick={() => { addItem(i); setBusca(''); }}>+ Adicionar</button>
+              </li>
             ))}
-          </select>
-        </div>
+            {!results.length && <li className="empty">Nenhuma peça em estoque encontrada.</li>}
+          </ul>
+        )}
         {msg && <p className="cad-msg">{msg}</p>}
       </div>
 
       <div className="cad-block">
         <h3>Itens da venda ({cart.length})</h3>
         <table className="cad-table">
-          <thead><tr><th>Código</th><th>Preço</th><th></th></tr></thead>
+          <thead><tr><th>Código</th><th>Peça</th><th>Preço</th><th></th></tr></thead>
           <tbody>
             {cart.map((i) => (
               <tr key={i.id}>
                 <td data-label="Código">{i.barcode || 'ID ' + i.id}</td>
+                <td data-label="Peça">{i.name || '—'}</td>
                 <td data-label="Preço">R$ {Number(i.price_sale || 0).toFixed(2)}</td>
-                <td data-label="Ação"><button onClick={() => removeItem(i.id)}>Remover</button></td>
+                <td data-label="Ação"><button className="del-btn" onClick={() => removeItem(i.id)}>✕</button></td>
               </tr>
             ))}
-            {!cart.length && <tr><td colSpan={3}>Nenhuma peça selecionada.</td></tr>}
+            {!cart.length && <tr><td colSpan={4}>Nenhuma peça selecionada.</td></tr>}
           </tbody>
         </table>
       </div>
@@ -159,7 +191,7 @@ export default function Vendas() {
           <button type="submit" disabled={saving || !cart.length}>
             {saving ? 'Registrando…' : `Finalizar Venda (${cart.length})`}
           </button>
-          <button type="button" onClick={cancelSale} disabled={!cart.length}>Cancelar</button>
+          <button type="button" className="cancel-btn" onClick={cancelSale} disabled={!cart.length}>Cancelar</button>
         </form>
       </div>
     </div>
