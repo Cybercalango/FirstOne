@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BackBar from '../components/BackBar';
+import LeitorCodigo from '../components/LeitorCodigo';
 import { supabase } from '../supabaseClient';
 import { gerarCodigoInterno } from '../utils/codigoInterno';
 
@@ -15,6 +16,57 @@ export default function Produtos() {
   const [items, setItems] = useState([]);
   const [selModel, setSelModel] = useState(null);
   const [msg, setMsg] = useState('');
+
+  // ---- Pesquisa de peças ----
+  const [pesquisaAberta, setPesquisaAberta] = useState(false);
+  const [qTexto, setQTexto] = useState('');       // código ou parte dele
+  const [qModelo, setQModelo] = useState('');     // id do modelo
+  const [qVariacao, setQVariacao] = useState(''); // id da variação
+  const [qStatus, setQStatus] = useState('');     // estoque | consignacao | vendido | emprestimo...
+  const [resultados, setResultados] = useState(null); // null = ainda não pesquisou
+  const [pesquisando, setPesquisando] = useState(false);
+
+  const pesquisar = async (codigoForcado) => {
+    const texto = (codigoForcado !== undefined ? codigoForcado : qTexto).trim();
+    setPesquisando(true);
+    let query = supabase.from('items').select('*').order('id', { ascending: false }).limit(200);
+    if (texto) {
+      // busca por código interno (exato ou parcial), aceita também com pontos/dashes
+      const limpo = texto.replace(/[\s.-]/g, '');
+      query = query.or(`barcode.eq.${texto},barcode.like.${limpo}*,barcode.like.${limpo}*`);
+    }
+    if (qModelo) query = query.eq('model_id', Number(qModelo));
+    if (qVariacao) query = query.eq('variant_id', Number(qVariacao));
+    if (qStatus) query = query.eq('status', qStatus);
+    const { data, error } = await query;
+    setPesquisando(false);
+    if (error) { setMsg('Erro na pesquisa: ' + error.message); setResultados([]); }
+    else { setResultados(data || []); setMsg(''); }
+  };
+
+  const limparPesquisa = () => {
+    setQTexto(''); setQModelo(''); setQVariacao(''); setQStatus('');
+    setResultados(null);
+  };
+
+  // Ao encontrar uma peça única via leitor, pré-preenche o formulário de cadastro
+  const editarNaLista = (item) => {
+    setSelModel(item.model_id || null);
+    setIt((prev) => ({
+      ...prev,
+      barcode: item.barcode || '',
+      variant_id: item.variant_id ? String(item.variant_id) : '',
+      size: item.size || '',
+      price_sale: item.price_sale != null ? String(item.price_sale) : prev.price_sale,
+      price_cost: item.price_cost != null ? String(item.price_cost) : prev.price_cost,
+      status: item.status || prev.status,
+      owner_type: item.owner_type || 'loja',
+      owner_id: item.owner_id ? String(item.owner_id) : '',
+      acquisition_date: item.acquisition_date || '',
+    }));
+    setMsg(`Peça ${item.barcode || '#' + item.id} carregada no formulário.`);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const [it, setIt] = useState({ barcode: '', variant_id: '', size: '', price_cost: '', price_sale: '', status: 'estoque', owner_type: 'loja', owner_id: '', acquisition_date: '' });
 
@@ -130,7 +182,74 @@ export default function Produtos() {
       </div>
 
       <div className="cad-block">
-        <h3>Peças Cadastradas</h3>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+          <h3 style={{ margin: 0 }}>Peças Cadastradas</h3>
+          <button type="button" className="btn-sec" onClick={() => setPesquisaAberta((v) => !v)}>
+            {pesquisaAberta ? '✖ Fechar Pesquisa' : '🔍 Pesquisar Produtos'}
+          </button>
+        </div>
+
+        {pesquisaAberta && (
+          <div className="cad-form people-form" style={{ marginTop: 12, padding: 12, background: '#f7f5fa', borderRadius: 10 }}>
+            <input
+              placeholder="Código interno (8 dígitos ou parte dele)"
+              value={qTexto}
+              onChange={(e) => setQTexto(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') pesquisar(); }}
+            />
+            <select value={qModelo} onChange={(e) => setQModelo(e.target.value)}>
+              <option value="">Todos os modelos</option>
+              {models.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+            </select>
+            <select value={qVariacao} onChange={(e) => setQVariacao(e.target.value)}>
+              <option value="">Todas as variações</option>
+              {variants.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+            </select>
+            <select value={qStatus} onChange={(e) => setQStatus(e.target.value)}>
+              <option value="">Todos os status</option>
+              <option value="estoque">Em estoque</option>
+              <option value="consignacao">Em consignação</option>
+              <option value="emprestimo">Emprestado</option>
+              <option value="vendido">Vendido</option>
+            </select>
+            <LeitorCodigo onCodigo={(c) => pesquisar(c)} placeholder="Ou leia a etiqueta 📷" />
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button type="button" onClick={() => pesquisar()} disabled={pesquisando}>
+                {pesquisando ? 'Pesquisando…' : '🔍 Pesquisar'}
+              </button>
+              <button type="button" className="btn-sec" onClick={limparPesquisa}>Limpar filtros</button>
+            </div>
+
+            {resultados !== null && (
+              <p style={{ fontSize: 14, color: '#555', margin: '6px 0' }}>
+                {resultados.length === 0
+                  ? 'Nenhuma peça encontrada com estes critérios.'
+                  : `${resultados.length} peça(s) encontrada(s):`}
+              </p>
+            )}
+            {resultados !== null && resultados.length > 0 && (
+              <table className="cad-table">
+                <thead><tr><th>Código</th><th>Modelo</th><th>Variação</th><th>Tam.</th><th>Venda</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                  {resultados.map((i) => (
+                    <tr key={i.id}>
+                      <td data-label="Código">{i.barcode || '#' + i.id}</td>
+                      <td data-label="Modelo">{modelName(i.model_id)}</td>
+                      <td data-label="Variação">{variantName(i.variant_id)}</td>
+                      <td data-label="Tam.">{i.size || '—'}</td>
+                      <td data-label="Venda">{i.price_sale ? `R$ ${Number(i.price_sale).toFixed(2)}` : '—'}</td>
+                      <td data-label="Status">{i.status}</td>
+                      <td data-label="Ações">
+                        <button type="button" className="btn-sec" style={{ padding: '4px 10px', fontSize: 13 }} onClick={() => editarNaLista(i)}>Usar</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+
         <table className="cad-table">
           <thead><tr><th>Código</th><th>Modelo</th><th>Variação</th><th>Tam.</th><th>Venda</th><th>Status</th><th>Proprietário</th><th>Aquisição</th></tr></thead>
           <tbody>
