@@ -1,0 +1,5 @@
+- name: Instalar p7zip
+  run: sudo apt-get update && sudo apt-get install -y p7zip-full
+
+- name: Extrair Work 7z
+  run: 7z x Work.7z -o./Work
