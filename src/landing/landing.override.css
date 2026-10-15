@@ -1,0 +1,31 @@
+/* Landing button overrides to ensure landing buttons keep intended size and gold color
+   This file enforces styles scoped under .landing-root and is imported after landing.css
+*/
+.landing-root .btn,
+.landing-root button.btn {
+  background: var(--gold) !important;
+  color: var(--primary-foreground) !important;
+  height: 40px !important;
+  padding: 0 16px !important;
+  font-size: 14px !important;
+  border: 1px solid transparent !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  box-sizing: border-box !important;
+}
+
+.landing-root .btn-icon,
+.landing-root button.btn-icon {
+  width: 40px !important;
+  height: 40px !important;
+  padding: 0 !important;
+}
+
+.landing-root .btn-outline { background: transparent !important; border-color: var(--border) !important; color: var(--foreground) !important; }
+.landing-root .btn-ghost { background: transparent !important; color: var(--foreground) !important; }
+.landing-root .btn-link { background: transparent !important; color: var(--foreground) !important; text-decoration: underline !important; text-underline-offset: 3px !important; }
+
+.landing-root .btn:hover { filter: brightness(0.98) !important; }
+.landing-root .btn:disabled { opacity: .55 !important; cursor: not-allowed !important; }
