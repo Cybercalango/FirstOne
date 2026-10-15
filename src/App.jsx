@@ -11,6 +11,7 @@ import Movimentacoes from './pages/Movimentacoes';
 import Vendas from './pages/Vendas';
 import Relatorios from './pages/Relatorios';
 import Etiquetas from './pages/Etiquetas';
+import Landing from './landing/Landing';
 import './App.css';
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/app" element={<Dashboard />} />
         <Route path="/cadastros" element={<Cadastros />} />
         <Route path="/produtos" element={<Produtos />} />
         <Route path="/pessoas" element={<Pessoas />} />
@@ -28,7 +30,7 @@ function App() {
         <Route path="/vendas" element={<Vendas />} />
         <Route path="/relatorios" element={<Relatorios />} />
         <Route path="/etiquetas" element={<Etiquetas />} />
-        <Route path="/" element={<Navigate to="/login" />} />
+        <Route path="/" element={<Landing />} />
       </Routes>
     </Router>
   );
