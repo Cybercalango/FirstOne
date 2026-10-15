@@ -39,7 +39,7 @@
   --accent: oklch(0.955 0.015 337);
   --border: oklch(0.91 0.007 320);
   --destructive: oklch(0.55 0.18 25);
-  --gold: oklch(0.64 0.09 78);
+  --gold: oklch(0.32 0.13 337);
   --hero-veil: oklch(0.94 0.013 85);
   --photo-background: oklch(0.943 0.003 255);
 }
