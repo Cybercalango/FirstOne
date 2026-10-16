@@ -12,6 +12,7 @@ import logo from './assets/flor-da-pele-logo.png';
 import editorial from './assets/jewelry-editorial.jpg';
 import { listProducts, categories as baseCategories, formatPrice } from './catalog';
 import './landing.css';
+import './landing.override.css';
 
 const categories = [...new Set([...baseCategories, 'Brincos', 'Colares', 'Pulseiras'])];
 
