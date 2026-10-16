@@ -20,15 +20,61 @@ async function comprimirImagem(file) {
   if (!file || !/^image\//.test(file.type)) {
     throw new Error('O arquivo selecionado não é uma imagem (' + (file?.type || 'tipo desconhecido') + ').');
   }
-  let bmp;
-  try {
-    bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
-  } catch {
-    bmp = await createImageBitmap(file); // navegadores sem suporte a EXIF-orientation
+  // ---- Decodificação em camadas ----
+  // "The source image could not be decoded" acontece quando o navegador NÃO
+  // decodifica o blob cru (fotos .heic/.heif do iPhone, variantes raras de
+  // JPEG/MPO, arquivos truncados). Estratégia: tentar várias fontes/formatos
+  // antes de desistir, e sempre com mensagem acionável (nunca crua).
+  const nomeArq = (file.name || '').toLowerCase();
+  const heicLike = /\.(heic|heif)$/.test(nomeArq) || /hei[cf]/i.test(file.type);
+
+  let bmp = null;
+  let ultimoErroDecode = null;
+  const tentaDecode = async (blob) => {
+    try { return await createImageBitmap(blob, { imageOrientation: 'from-image' }); }
+    catch (e1) {
+      try { return await createImageBitmap(blob); } // sem opção de orientação
+      catch (e2) { ultimoErroDecode = e2; return null; }
+    }
+  };
+
+  bmp = await tentaDecode(file);
+
+  // Caminho 2: reembrulhar o buffer com MIME explícito (ajuda quando o tipo
+  // vindo da câmera é vago/exótico, ex.: image/heic que o bitmap ignora).
+  if (!bmp && !heicLike) {
+    try {
+      const buf = await file.arrayBuffer();
+      for (const mime of ['image/jpeg', 'image/png']) {
+        bmp = await tentaDecode(new Blob([buf], { type: mime }));
+        if (bmp) break;
+      }
+    } catch (e) { /* segue para fallback de elemento <img> */ }
   }
-  // Fallback para formatos que createImageBitmap não decodifica (ex.: SVG antigo)
+
+  // Caminho 3: decodificar via objeto de URL + <img> (em alguns celulares
+  // o pipeline de <img> aceita arquivos que createImageBitmap rejeita).
+  if (!bmp) {
+    bmp = await new Promise((res) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => { res(img); };
+      img.onerror = () => { URL.revokeObjectURL(url); res(null); };
+      img.decoding = 'async';
+      img.src = url;
+    });
+    // Se veio um <img>, pintamos direto no canvas adiante (sem bitmap).
+  }
+
   if (!bmp || !bmp.width || !bmp.height) {
-    throw new Error('Formato de imagem não suportado pelo navegador — tire outra foto ou use JPG/PNG.');
+    throw new Error(
+      heicLike
+        ? 'Essa foto está em formato HEIC/HEIF (iPhone), que o navegador não decodifica. ' +
+          'No iPhone: Ajustes → Câmera → Formatos → “Mais compatível” (JPEG), ou envie uma captura/print da foto.'
+        : 'O navegador não conseguiu ler esta imagem — pode estar corrompida ou em formato incomum. ' +
+          'Tire outra foto com a câmera ou escolha um arquivo JPG/PNG.' +
+          (ultimoErroDecode ? ` (${ultimoErroDecode.message})` : '')
+    );
   }
   let scale = Math.min(1, COMPRESS_MAX_PX / Math.max(bmp.width, bmp.height));
   // Reduz também se o total de pixels estourar o limite do canvas do dispositivo
@@ -40,7 +86,8 @@ async function comprimirImagem(file) {
   canvas.height = Math.max(1, Math.round(bmp.height * scale));
   const ctx = canvas.getContext('2d');
   ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
-  bmp.close && bmp.close(); // libera memória da foto original (celular: 8-12 MP)
+  if (bmp.close) bmp.close(); // bitmap: libera memória da foto original (celular: 8-12 MP)
+  else if (bmp.src && String(bmp.src).startsWith('blob:')) URL.revokeObjectURL(bmp.src); // <img>: libera a object URL
   // toBlob pode retornar null (ex.: imagem muito grande p/ o canvas do
   // navegador). Nesse caso cai no fallback abaixo em vez de enviar
   // undefined ao storage (erro "undefined" no upload).
@@ -448,7 +495,7 @@ export default function Produtos() {
                     <label className="btn-sec" title="Enviar foto para o catálogo (comprimida no navegador)"
                       style={{ padding: '4px 8px', fontSize: 12, cursor: uploadingFoto[i.id] ? 'wait' : 'pointer', opacity: uploadingFoto[i.id] ? 0.5 : 1 }}>
                       {uploadingFoto[i.id] ? '…' : i.image_url ? '↻' : '+'}
-                      <input type="file" accept="image/*" hidden disabled={!!uploadingFoto[i.id]}
+                      <input type="file" accept="image/*,image/jpeg,image/png,.jpg,.jpeg,.png" hidden disabled={!!uploadingFoto[i.id]}
                         onChange={(e) => { const f = e.target.files && e.target.files[0]; enviarFoto(i.id, f); e.target.value = ''; }} />
                     </label>
                     {i.image_url && !uploadingFoto[i.id] && (
