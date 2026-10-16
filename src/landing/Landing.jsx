@@ -12,6 +12,7 @@ import logo from './assets/flor-da-pele-logo.png';
 import editorial from './assets/jewelry-editorial.jpg';
 import { listProducts, categories as baseCategories, formatPrice } from './catalog';
 import './landing.css';
+import './landing.override.css';
 
 const categories = [...new Set([...baseCategories, 'Brincos', 'Colares', 'Pulseiras'])];
 
@@ -105,7 +106,7 @@ export default function Landing() {
                 <Button key={c} variant={category === c ? 'default' : 'ghost'} className="category-tab" aria-pressed={category === c} onClick={() => setCategory(c)}>{c}</Button>
               ))}
             </div>
-            <div className="sort-control"><SlidersHorizontal size={15} /><select aria-label="Ordenar joias" value={sort} onChange={(e) => setSort(e.target.value)}><option value="featured">Destaques</option><option value="name">Nome: A a Z</option></select></div>
+            <div className="sort-control"><SlidersHorizontal size={15} /><select aria-label="Ordenar joias" value={sort} onChange={(e) => setSort(e.target.value)}><option value="featured">Destaqu</select></div>
           </div>
           {(searchOpen || favoritesOnly) && (
             <div className="search-row">
@@ -183,7 +184,7 @@ export default function Landing() {
               </>
             ) : (
               <>
-                <p className="availability-note">{selected.available ? 'Consulte os modelos e valores disponíveis com a Flor da Pele.' : 'Peça indisponível no momento. Fale com a gente para saber quando volta.'}</p>
+                <p className="availability-note">{selected.available ? 'Consulte os modelos e valores disponíveis com a Flor da Pele.' : 'Peça indisponível no momento. Fale com a gente para sa[...']}</p>
                 <Button onClick={() => { setSelected(null); setContact(true); }}><MessageCircle /> Consultar disponibilidade</Button>
               </>
             )}
