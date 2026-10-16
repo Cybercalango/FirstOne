@@ -23,7 +23,10 @@ export function allCategories() {
 export async function listProducts() {
   const { data, error } = await supabase
     .from('items')
-    .select('id, code, name, description, price, image_url, category, available, published, sort_order')
+    // `code` e `price` são colunas antigas do catálogo portado da landing
+    // original; o gerenciador grava em `barcode` e `price_sale`.
+    // Selecionamos tudo (*) para não quebrar se alguma coluna faltar.
+    .select('*')
     .eq('published', true)
     .order('sort_order', { ascending: true })
     .order('name', { ascending: true });
@@ -36,7 +39,8 @@ export async function listProducts() {
     category: row.category || 'Joias',
     description: row.description || '',
     tag: row.available === false ? '' : 'Novo',
-    price: row.price != null ? Number(row.price) : null,
+    price: row.price_sale != null ? Number(row.price_sale)
+         : row.price != null ? Number(row.price) : null,
     buyLink: null,
     imagePath: null,
     imageUrl: row.image_url || null,
