@@ -56,6 +56,7 @@ export default function Produtos() {
     setSelModel(item.model_id || null);
     setIt((prev) => ({
       ...prev,
+      name: item.name || '',
       barcode: item.barcode || '',
       variant_id: item.variant_id ? String(item.variant_id) : '',
       size: item.size || '',
@@ -70,7 +71,18 @@ export default function Produtos() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const [it, setIt] = useState({ barcode: '', variant_id: '', size: '', price_cost: '', price_sale: '', status: 'estoque', owner_type: 'loja', owner_id: '', acquisition_date: '' });
+  const [it, setIt] = useState({ name: '', barcode: '', variant_id: '', size: '', price_cost: '', price_sale: '', status: 'estoque', owner_type: 'loja', owner_id: '', acquisition_date: '' });
+
+  // Nome enviado ao banco: o digitado, ou derivado do modelo selecionado.
+  // (A coluna items.name pode ter NOT NULL no banco legado — nunca envie null.)
+  const nomeParaSalvar = () => {
+    const digitado = it.name.trim();
+    if (digitado) return digitado;
+    const mdl = models.find((x) => x.id === selModel);
+    const base = (mdl && mdl.name) ? mdl.name : (it.barcode.trim() || '');
+    const suffix = [it.variant_id && variantName(Number(it.variant_id)), it.size].filter(Boolean).join(' ');
+    return [base, suffix].filter(Boolean).join(' ') || null;
+  };
 
   const load = async () => {
     const [mo, ty, va, gr, gs, pe, im] = await Promise.all([
@@ -90,9 +102,13 @@ export default function Produtos() {
   const addItem = async (e) => {
     e.preventDefault();
     if (!selModel) { setMsg('Selecione um modelo primeiro.'); return; }
+    if (!it.barcode.trim()) { setMsg('Informe (ou gere) o código interno da peça.'); return; }
+    const name = nomeParaSalvar();
+    if (!name) { setMsg('Informe um nome para a peça ou selecione um modelo.'); return; }
     const { error } = await supabase.from('items').insert([{
       model_id: selModel,
-      barcode: it.barcode.trim() || null,
+      name,
+      barcode: it.barcode.trim(),
       variant_id: it.variant_id ? Number(it.variant_id) : null,
       size: it.size || null,
       price_cost: it.price_cost ? Number(it.price_cost) : 0,
@@ -103,7 +119,7 @@ export default function Produtos() {
       acquisition_date: it.acquisition_date || null,
     }]);
     if (error) setMsg('Erro: ' + error.message);
-    else { setIt({ ...it, barcode: '', size: '', price_cost: '', price_sale: '', acquisition_date: '' }); setMsg('Item cadastrado!'); load(); }
+    else { setIt({ ...it, name: '', barcode: '', size: '', price_cost: '', price_sale: '', acquisition_date: '' }); setMsg('Item cadastrado!'); load(); }
   };
 
   const modelName = (id) => (models.find((x) => x.id === id) || {}).name || '—';
@@ -132,6 +148,7 @@ export default function Produtos() {
             <option value="">Selecionar modelo…</option>
             {models.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
           </select>
+          <input placeholder="Nome da peça (opcional — usa o nome do modelo)" value={it.name} onChange={(e) => setIt({ ...it, name: e.target.value })} />
           <input placeholder="Código interno (8 dígitos)" value={it.barcode} onChange={(e) => setIt({ ...it, barcode: e.target.value })} />
           <button type="button" className="btn-sec" onClick={() => {
             // Gera código interno: modelo (seq do cadastro) + variação (2 díg.) + grade (1 díg.) + DV
