@@ -5,6 +5,35 @@ import LeitorCodigo from '../components/LeitorCodigo';
 import { supabase } from '../supabaseClient';
 import { gerarCodigoInterno } from '../utils/codigoInterno';
 
+
+// ---- Upload de foto do catálogo (bucket público 'catalogo') ----
+const COMPRESS_MAX_PX = 1200;   // lado máximo da imagem enviada
+const COMPRESS_QUALITY = 0.82;  // qualidade JPEG
+
+// Redimensiona + comprime a foto no navegador antes do upload
+// (evita enviar originals de câmera de 5-10 MB e padroniza o catálogo).
+async function comprimirImagem(file) {
+  const dataUrl = await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+  const img = await new Promise((res, rej) => {
+    const i = new Image();
+    i.onload = () => res(i);
+    i.onerror = rej;
+    i.src = dataUrl;
+  });
+  const scale = Math.min(1, COMPRESS_MAX_PX / Math.max(img.width, img.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(img.width * scale);
+  canvas.height = Math.round(img.height * scale);
+  canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+  const blob = await new Promise((res) => canvas.toBlob(res, 'image/jpeg', COMPRESS_QUALITY));
+  return blob;
+}
+
 export default function Produtos() {
   const navigate = useNavigate();
   const [models, setModels] = useState([]);
@@ -16,6 +45,10 @@ export default function Produtos() {
   const [items, setItems] = useState([]);
   const [selModel, setSelModel] = useState(null);
   const [msg, setMsg] = useState('');
+
+  // ---- Publicação no catálogo da landing page ----
+
+  const [uploadingFoto, setUploadingFoto] = useState({}); // id -> true enquanto envia
 
   // ---- Pesquisa de peças ----
   const [pesquisaAberta, setPesquisaAberta] = useState(false);
@@ -71,7 +104,7 @@ export default function Produtos() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const [it, setIt] = useState({ name: '', barcode: '', variant_id: '', size: '', quantity: 1, price_cost: '', price_sale: '', status: 'estoque', owner_type: 'loja', owner_id: '', acquisition_date: '' });
+  const [it, setIt] = useState({ name: '', barcode: '', variant_id: '', size: '', quantity: 1, price_cost: '', price_sale: '', status: 'estoque', owner_type: 'loja', owner_id: '', acquisition_date: '', published: false });
 
   // Nome enviado ao banco: o digitado, ou derivado do modelo selecionado.
   // (A coluna items.name pode ter NOT NULL no banco legado — nunca envie null.)
@@ -126,6 +159,10 @@ export default function Produtos() {
         owner_type: it.owner_type,
         owner_id: it.owner_type === 'pessoa' && it.owner_id ? Number(it.owner_id) : null,
         acquisition_date: it.acquisition_date || null,
+        // Publicação no catálogo da landing (colunas do script 20):
+        published: !!it.published,
+        available: true,
+        category: 'Joias',
       });
     }
 
@@ -164,6 +201,60 @@ export default function Produtos() {
     const mdl = models.find((x) => x.id === selModel);
     if (!mdl || !mdl.default_grid_id) return [];
     return gridSizes.filter((s) => s.grid_id === mdl.default_grid_id).map((s) => s.size);
+  };
+
+  // ---- Publicar/despublicar no catálogo da landing page ----
+  // A landing lista apenas items com published = true (policy catalogo_publico_read).
+  const togglePublicar = async (item) => {
+    const novo = !item.published;
+    const patch = { published: novo };
+    // Ao publicar pela 1ª vez, garante categoria e disponibilidade padrão.
+    if (novo) {
+      if (!item.category) patch.category = 'Joias';
+      if (item.available == null) patch.available = true;
+    }
+    const { error } = await supabase.from('items').update(patch).eq('id', item.id);
+    if (error) { setMsg('Erro ao atualizar publicação: ' + error.message); return; }
+    setIt((prev) => ({ ...prev, published: novo }));
+    setMsg(novo ? 'Peça publicada no site! 🌐' : 'Peça retirada do catálogo.');
+    load();
+  };
+
+  // ---- Upload de foto para o bucket público 'catalogo' ----
+  const enviarFoto = async (itemId, file) => {
+    if (!file) return;
+    setUploadingFoto((p) => ({ ...p, [itemId]: true }));
+    try {
+      const blob = await comprimirImagem(file);
+      // Pasta por usuário: a policy catalogo_auth_insert exige
+      // primeiro segmento do caminho == auth.uid() (uuid da sessão).
+      const { data: sess } = await supabase.auth.getSession();
+      const uid = sess?.session?.user?.id;
+      if (!uid) throw new Error('Sessão não encontrada — faça login novamente.');
+      const path = `${uid}/item-${itemId}-${Date.now()}.jpg`;
+      const { error: errUp } = await supabase.storage
+        .from('catalogo').upload(path, blob, { contentType: 'image/jpeg' });
+      if (errUp) throw errUp;
+      const { data: pub } = await supabase.storage.from('catalogo').getPublicUrl(path);
+      const { error: errDb } = await supabase.from('items')
+        .update({ image_url: pub.publicUrl }).eq('id', itemId);
+      if (errDb) throw errDb;
+      setMsg('Foto enviada! ✅');
+      load();
+    } catch (e) {
+      setMsg('Erro no upload da foto: ' + e.message +
+        (String(e.message).includes('row-level security')
+          ? '. Execute sql/24_upload_foto_catalogo.sql no SQL Editor do Supabase.' : ''));
+    } finally {
+      setUploadingFoto((p) => { const n = { ...p }; delete n[itemId]; return n; });
+    }
+  };
+
+  const removerFoto = async (item) => {
+    const { error } = await supabase.from('items').update({ image_url: null }).eq('id', item.id);
+    if (error) { setMsg('Erro ao remover foto: ' + error.message); return; }
+    setMsg('Foto removida do catálogo (arquivo antigo permanece no storage).');
+    load();
   };
 
   return (
@@ -233,6 +324,11 @@ export default function Produtos() {
             </select>
           )}
           <label>Aquisição: <input type="date" value={it.acquisition_date} onChange={(e) => setIt({ ...it, acquisition_date: e.target.value })} /></label>
+          <label title="Se marcada, a(s) peça(s) já nasce(m) visível(is) no catálogo da página inicial (ainda sem foto — envie depois na lista abaixo).">
+            <input type="checkbox" checked={!!it.published}
+              onChange={(e) => setIt({ ...it, published: e.target.checked })} />
+            {' '}Publicar no site 🌐
+          </label>
           <button type="submit">Adicionar Peça</button>
         </form>
         {msg && <p className="cad-msg">{msg}</p>}
@@ -308,11 +404,31 @@ export default function Produtos() {
         )}
 
         <table className="cad-table">
-          <thead><tr><th>Código</th><th>Modelo</th><th>Variação</th><th>Tam.</th><th>Venda</th><th>Status</th><th>Proprietário</th><th>Aquisição</th></tr></thead>
+          <thead><tr><th>Código</th><th>Foto</th><th>Modelo</th><th>Variação</th><th>Tam.</th><th>Venda</th><th>Status</th><th>Proprietário</th><th>Aquisição</th><th>Site</th></tr></thead>
           <tbody>
             {items.map((i) => (
               <tr key={i.id}>
                 <td data-label="Código">{i.barcode || i.id}</td>
+                <td data-label="Foto">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {i.image_url ? (
+                      <img src={i.image_url} alt="" title="Foto atual do catálogo"
+                        style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 6, border: '1px solid #e6d9e2' }} />
+                    ) : (
+                      <span style={{ width: 40, height: 40, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#f6ecf3', borderRadius: 6, color: '#b78aa8', fontSize: 16 }}>📷</span>
+                    )}
+                    <label className="btn-sec" title="Enviar foto para o catálogo (comprimida no navegador)"
+                      style={{ padding: '4px 8px', fontSize: 12, cursor: uploadingFoto[i.id] ? 'wait' : 'pointer', opacity: uploadingFoto[i.id] ? 0.5 : 1 }}>
+                      {uploadingFoto[i.id] ? '…' : i.image_url ? '↻' : '+'}
+                      <input type="file" accept="image/*" hidden disabled={!!uploadingFoto[i.id]}
+                        onChange={(e) => { const f = e.target.files && e.target.files[0]; enviarFoto(i.id, f); e.target.value = ''; }} />
+                    </label>
+                    {i.image_url && !uploadingFoto[i.id] && (
+                      <button type="button" className="btn-sec" title="Remover foto do catálogo"
+                        style={{ padding: '4px 8px', fontSize: 12 }} onClick={() => removerFoto(i)}>✖</button>
+                    )}
+                  </div>
+                </td>
                 <td data-label="Modelo">{(i.models && i.models.name) || modelName(i.model_id)}</td>
                 <td data-label="Variação">{variantName(i.variant_id)}</td>
                 <td data-label="Tam.">{i.size || '—'}</td>
@@ -320,6 +436,15 @@ export default function Produtos() {
                 <td data-label="Status">{i.status}</td>
                 <td data-label="Proprietário">{i.owner_type === 'pessoa' ? personName(i.owner_id) : 'Loja'}</td>
                 <td data-label="Aquisição">{i.acquisition_date || '—'}</td>
+                <td data-label="Site">
+                  <label title={i.published ? 'Publicada no site — clique para retirar' : 'Não publicada — clique para publicar'}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                    <input type="checkbox" checked={!!i.published} onChange={() => togglePublicar(i)} />
+                    <span style={{ fontSize: 12, color: i.published ? '#8E2A6E' : '#999' }}>
+                      {i.published ? '🌐 No catálogo' : 'Interna'}
+                    </span>
+                  </label>
+                </td>
               </tr>
             ))}
           </tbody>
