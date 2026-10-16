@@ -30,7 +30,11 @@ async function comprimirImagem(file) {
   canvas.width = Math.round(img.width * scale);
   canvas.height = Math.round(img.height * scale);
   canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+  // toBlob pode retornar null (ex.: imagem muito grande p/ o canvas do
+  // navegador). Nesse caso cai no fallback abaixo em vez de enviar
+  // undefined ao storage (erro "undefined" no upload).
   const blob = await new Promise((res) => canvas.toBlob(res, 'image/jpeg', COMPRESS_QUALITY));
+  if (!blob) throw new Error('Falha ao comprimir a imagem — tente uma foto menor ou outro formato.');
   return blob;
 }
 
@@ -242,9 +246,14 @@ export default function Produtos() {
       setMsg('Foto enviada! ✅');
       load();
     } catch (e) {
-      setMsg('Erro no upload da foto: ' + e.message +
-        (String(e.message).includes('row-level security')
-          ? '. Execute sql/24_upload_foto_catalogo.sql no SQL Editor do Supabase.' : ''));
+      // Erros do storage podem vir sem .message (ex.: objeto de erro do
+      // fetch) — usa String(e) para nunca exibir "undefined".
+      const detalhe = e?.message || e?.errorDesc || JSON.stringify(e) || String(e);
+      setMsg('Erro no upload da foto: ' + detalhe +
+        (detalhe.includes('row-level security')
+          ? '. Execute sql/24_upload_foto_catalogo.sql no SQL Editor do Supabase.'
+          : detalhe.includes('too large') || detalhe.includes('maxFileSize')
+            ? '. Limite de tamanho do bucket atingido — use uma foto menor.' : ''));
     } finally {
       setUploadingFoto((p) => { const n = { ...p }; delete n[itemId]; return n; });
     }
