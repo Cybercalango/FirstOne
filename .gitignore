@@ -25,3 +25,6 @@ dist-ssr
 
 .env.local
 .env
+
+# Scripts auxiliares de depuracao (nao versionar)
+probe*.mjs
