@@ -1,31 +1,52 @@
-/* Landing button overrides to ensure landing buttons keep intended size and gold color
-   This file enforces styles scoped under .landing-root and is imported after landing.css
-*/
+/* src/landing/landing.override.css */
+/* Overrides da landing — escopo .landing-root — Magenta Vinho (#8E2A6E) via tokens globais */
 .landing-root .btn,
-.landing-root button.btn {
-  background: var(--gold) !important;
-  color: var(--primary-foreground) !important;
+.landing-root button.btn,
+.landing-root button {
+  background: var(--theme-primary) !important;
+  color: var(--theme-primary-foreground) !important;
   height: 40px !important;
+  min-width: 120px !important;
   padding: 0 16px !important;
   font-size: 14px !important;
-  border: 1px solid transparent !important;
+  line-height: 1 !important;
+  border-radius: 8px !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
   gap: 8px !important;
   box-sizing: border-box !important;
+  box-shadow: 0 8px 20px rgba(142,42,110,0.12) !important;
+  transition: transform .18s ease, box-shadow .18s ease, filter .12s ease !important;
 }
 
 .landing-root .btn-icon,
 .landing-root button.btn-icon {
   width: 40px !important;
+  min-width: 40px !important;
   height: 40px !important;
   padding: 0 !important;
+  border-radius: 999px !important;
 }
 
-.landing-root .btn-outline { background: transparent !important; border-color: var(--border) !important; color: var(--foreground) !important; }
-.landing-root .btn-ghost { background: transparent !important; color: var(--foreground) !important; }
-.landing-root .btn-link { background: transparent !important; color: var(--foreground) !important; text-decoration: underline !important; text-underline-offset: 3px !important; }
+.landing-root .btn-outline {
+  background: transparent !important;
+  border-color: rgba(142,42,110,0.28) !important;
+  color: var(--theme-primary) !important;
+}
+.landing-root .btn-ghost {
+  background: transparent !important;
+  color: var(--theme-primary) !important;
+}
+.landing-root .btn-link {
+  background: transparent !important;
+  color: var(--theme-primary) !important;
+  text-decoration: underline !important;
+}
 
-.landing-root .btn:hover { filter: brightness(0.98) !important; }
-.landing-root .btn:disabled { opacity: .55 !important; cursor: not-allowed !important; }
+.landing-root .btn:hover,
+.landing-root button:hover {
+  filter: brightness(0.98) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 10px 24px rgba(142, 42, 110, 0.16) !important;
+}

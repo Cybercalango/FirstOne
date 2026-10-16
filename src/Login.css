@@ -77,7 +77,7 @@
 .link-btn {
   background: none;
   border: none;
-  color: #b8860b;
+  color: var(--theme-primary);
   cursor: pointer;
   font-size: 0.9rem;
   text-decoration: underline;
