@@ -19,73 +19,31 @@ export function allCategories() {
 /**
  * Lista peças publicadas no catálogo.
  * Retorna objetos no formato ProductDTO usado pela landing.
- *
- * Implementa fallback automático para o caso em que a coluna `code`
- * não exista na tabela (erro comum em migrações). Nesse caso, tenta
- * refazer a consulta sem a coluna `code` e prosseguir normalmente.
  */
 export async function listProducts() {
-  // campos usados pela landing (mantemos uma lista para fallback)
-  const fieldsWithCode = 'id, code, name, description, price, image_url, category, available, published, sort_order';
-  const fieldsWithoutCode = 'id, name, description, price, image_url, category, available, published, sort_order';
+  const { data, error } = await supabase
+    .from('items')
+    .select('id, code, name, description, price, image_url, category, available, published, sort_order')
+    .eq('published', true)
+    .order('sort_order', { ascending: true })
+    .order('name', { ascending: true });
 
-  async function query(fields) {
-    const { data, error } = await supabase
-      .from('items')
-      .select(fields)
-      .eq('published', true)
-      .order('sort_order', { ascending: true })
-      .order('name', { ascending: true });
+  if (error) throw error;
 
-    return { data, error };
-  }
-
-  // Primeiro tenta com a coluna `code` (compatibilidade com backups antigos)
-  try {
-    const { data, error } = await query(fieldsWithCode);
-    if (error) throw error;
-
-    return (data ?? []).map((row) => ({
-      id: row.id,
-      name: row.name,
-      category: row.category || 'Joias',
-      description: row.description || '',
-      tag: row.available === false ? '' : 'Novo',
-      price: row.price != null ? Number(row.price) : null,
-      buyLink: null,
-      imagePath: null,
-      imageUrl: row.image_url || null,
-      sortOrder: row.sort_order ?? 0,
-      available: row.available !== false,
-      published: row.published !== false,
-    }));
-  } catch (err) {
-    const msg = String(err?.message || err);
-    // Detecta erro de coluna inexistente e tenta fallback sem `code`
-    if (/column[^\n]*code[^\n]*does not exist/i.test(msg) || /column .*code.*does not exist/i.test(msg)) {
-      // Tenta novamente sem `code`
-      const { data, error } = await query(fieldsWithoutCode);
-      if (error) throw error;
-
-      return (data ?? []).map((row) => ({
-        id: row.id,
-        name: row.name,
-        category: row.category || 'Joias',
-        description: row.description || '',
-        tag: row.available === false ? '' : 'Novo',
-        price: row.price != null ? Number(row.price) : null,
-        buyLink: null,
-        imagePath: null,
-        imageUrl: row.image_url || null,
-        sortOrder: row.sort_order ?? 0,
-        available: row.available !== false,
-        published: row.published !== false,
-      }));
-    }
-
-    // Se for outro erro, propaga para o chamador (Landing.jsx exibirá a mensagem)
-    throw err;
-  }
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    name: row.name,
+    category: row.category || 'Joias',
+    description: row.description || '',
+    tag: row.available === false ? '' : 'Novo',
+    price: row.price != null ? Number(row.price) : null,
+    buyLink: null,
+    imagePath: null,
+    imageUrl: row.image_url || null,
+    sortOrder: row.sort_order ?? 0,
+    available: row.available !== false,
+    published: row.published !== false,
+  }));
 }
 
 /** Salva/atualiza uma peça publicada no catálogo (uso do admin interno). */
