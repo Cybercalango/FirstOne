@@ -98,8 +98,8 @@
 .landing-root .sort-control select { background: transparent; border: none; padding-right: 6px; outline-color: var(--primary); }
 .landing-root .catalog-count { font-size: 10px; color: var(--muted-foreground); padding-block: 17px; }
 .landing-root .product-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 23px; }
-.landing-root .product-photo { position: relative; background: var(--photo-background); overflow: hidden; border-radius: 3px; aspect-ratio: 1 / 1.08; }
-.landing-root .product-photo a { display: block; width: 100%; height: 100%; }
+.landing-root .product-photo { position: relative; background: var(--photo-background); overflow: hidden; border-radius: 3px; aspect-ratio: 1 / 1.08; -webkit-tap-highlight-color: transparent; }
+.landing-root .product-photo a { display: block; width: 100%; height: 100%; min-height: 44px; }
 .landing-root .product-photo img { width: 100%; height: 100%; object-fit: cover; transition: transform 500ms ease; }
 .landing-root .product-photo:hover img { transform: scale(1.045); }
 .landing-root .product-tag { position: absolute; top: 13px; left: 13px; font-size: 8px; letter-spacing: .6px; background: var(--background); color: var(--primary); padding: 6px 9px; border-radius: 2px; pointer-events: none; }
@@ -136,6 +136,12 @@
 .landing-root .availability-note { font-size: 11px; line-height: 1.7; color: var(--muted-foreground); }
 .landing-root .product-dialog .product-buy { width: 100%; }
 .landing-root .product-info .product-buy-link { color: var(--primary); }
+/* Diálogos da landing (overlay + painel) — base antes inexistente: sem isto,
+   o modal de produto/menu aparecia como bloco solto no fluxo da página. */
+.landing-root .dialog-overlay { position: fixed; inset: 0; z-index: 60; background: color-mix(in oklch, var(--foreground) 45%, transparent); }
+.landing-root [role="dialog"] { position: fixed; inset: 0; z-index: 61; display: flex; align-items: center; justify-content: center; padding: 16px; pointer-events: none; }
+.landing-root .dialog-content { pointer-events: auto; position: relative; display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 480px; max-height: 92dvh; overflow-y: auto; -webkit-overflow-scrolling: touch; background: var(--background); color: var(--foreground); border: 1px solid var(--border); border-radius: 8px; padding: 22px; box-shadow: 0 24px 60px rgba(0,0,0,.25); }
+.landing-root .dialog-close { position: absolute; top: 10px; right: 10px; width: 40px !important; min-width: 40px !important; height: 40px !important; padding: 0 !important; border-radius: 50% !important; background: transparent !important; color: var(--muted-foreground) !important; box-shadow: none !important; font-size: 15px; line-height: 1; }
 .landing-root .mobile-menu nav { display: grid; gap: 4px; margin-top: 6px; }
 .landing-root .mobile-menu nav button { justify-content: flex-start; height: 48px; font-size: 14px; border-radius: 4px; }
 .landing-root .mobile-menu nav button + button { border-color: var(--primary); color: var(--primary); }
@@ -165,18 +171,9 @@
  .header-actions button { width: 44px; height: 44px; }
  .header-actions svg { width: 21px; height: 21px; }
  .favorite-counter span { top: 4px; right: 4px; width: 15px; height: 15px; font-size: 9px; }
- .editorial-hero { height: 560px; }
- .hero-image { object-position: 66% center; }
- .editorial-hero::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, color-mix(in oklch, var(--hero-veil) 92%, transparent), color-mix(in oklch, var(--hero-veil) 65%, transparent) 49%, transparent 100%); pointer-events: none; }
- .hero-inner { z-index: 1; align-items: flex-start; padding-top: 46px; }
- .hero-copy { max-width: 320px; }
  .hero-copy h1 { font-size: 11px; margin-top: 20px; }
- .hero-copy h1 > span { font-size: 46px; line-height: 1.08; margin-top: 14px; }
- .hero-copy p { font-size: 14px; max-width: 300px; margin-top: 18px; line-height: 1.8; }
  .desktop-break { display: none; }
- .hero-cta { margin-top: 24px; height: 48px; width: 100%; max-width: 300px; }
  .hero-caption { font-size: 11px; margin-top: 20px; }
- .collection-stamp { right: 18px; bottom: 18px; z-index: 1; }
  .values-strip { margin-inline: 20px; min-height: 112px; gap: 10px; }
  .values-strip > div { flex-direction: column; gap: 8px; text-align: center; font-size: 11px; line-height: 1.5; padding: 0 4px; }
  .values-strip > div + div { border-left: none; }
@@ -195,9 +192,7 @@
  .search-row { padding-top: 12px; }
  .search-row label { max-width: none; min-height: 46px; }
  .search-row input { font-size: 16px; padding: 11px 0; }
- .product-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 26px 14px; }
  .product-tag { font-size: 9px; top: 10px; left: 8px; padding: 5px 7px; }
- .product-heart { right: 4px; top: 4px; width: 40px; height: 40px; }
  .product-info { padding-top: 12px; }
  .product-info > span { font-size: 10px; }
  .product-info h3 { font-size: 14px; }
@@ -213,7 +208,6 @@
  .closing-inner h2 { font-size: 28px; }
  .closing-inner p { font-size: 13px; line-height: 1.7; }
  .closing-inner button { grid-column: 2; justify-self: start; font-size: 12px; padding-inline: 16px; gap: 12px; height: 46px; }
- .site-footer { display: block; text-align: center; padding-block: 24px; }
  .site-footer > div { flex-direction: column; gap: 8px; margin-bottom: 14px; }
  .site-footer strong { font-size: 12px; }
  .site-footer span { font-size: 11px; }
@@ -222,4 +216,39 @@
  .product-dialog h2 { font-size: 26px; }
  .availability-note { font-size: 13px; }
 }
+/* ---- Mobile-first refinado (≤700px): fluxo vertical, alvos de toque, sem cortes ---- */
+@media (max-width: 700px) {
+ /* HERO: layout em coluna — texto primeiro, foto editorial abaixo em proporção
+    natural (4:5). Nada é cortado pelo crop fixo de desktop e o CTA ocupa a largura. */
+ .editorial-hero { height: auto; display: flex; flex-direction: column; }
+ .hero-inner { order: 1; padding-top: 26px; padding-bottom: 24px; }
+ .hero-image { position: static; width: 100%; height: auto; aspect-ratio: 4 / 5; order: 2; }
+ .editorial-hero::after { display: none; }
+ .hero-copy { max-width: none; }
+ .hero-copy h1 > span { font-size: clamp(38px, 11vw, 46px); line-height: 1.08; margin-top: 14px; }
+ .hero-copy p { max-width: none; font-size: 14px; line-height: 1.8; margin-top: 18px; }
+ .hero-cta { margin-top: 24px; height: 48px; width: 100%; max-width: none; }
+ .collection-stamp { display: none; }
+
+ /* CATÁLOGO: 2 colunas com fotos quadradas (o crop 1/1.08 ficava estranho no celular) */
+ .product-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 22px 12px; }
+ .product-photo { aspect-ratio: 1 / 1; }
+ .product-info button { min-height: 40px; }
+ .product-heart { right: 4px; top: 4px; width: 44px; height: 44px; min-width: 44px; min-height: 44px; }
+
+ /* DIÁLOGOS: painel quase full-screen no celular, com rolagem interna suave */
+ .landing-root .dialog-content { max-width: none; width: calc(100% - 20px); padding: 18px; }
+ .product-dialog > img { height: min(46vw, 300px); }
+
+ /* RODAPÉ: empilhado e centralizado, link "Acesso interno" com área de toque cômoda */
+ .site-footer { display: block; text-align: center; padding-block: 30px; }
+ .site-footer a { display: inline-block; padding: 10px 14px; }
+}
+/* Telas muito pequenas (≤380px): uma coluna no catálogo para não espremer preço/nome */
+@media (max-width: 380px) {
+ .product-grid { grid-template-columns: 1fr; gap: 26px; }
+ .product-photo { aspect-ratio: 4 / 5; max-width: 78%; margin-inline: auto; }
+}
+/* Hover apenas onde existe mouse — evita "grudar" estado hover ao tocar no celular */
+@media (hover: none) { .product-photo:hover img { transform: none; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
