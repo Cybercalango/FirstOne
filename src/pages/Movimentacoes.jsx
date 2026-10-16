@@ -29,10 +29,16 @@ export default function Movimentacoes() {
     e.preventDefault();
     if (!mv.item_id || !mv.person_id) { setMsg('Selecione a peça e o responsável.'); return; }
     const userId = localStorage.getItem('userId');
-    const { error } = await supabase.from('stock_movements').insert([{
+    // Colunas reais do banco (ver sql/22_fix_stock_movements_columns.sql):
+    // type + quantity existem após a migração; movement_type é legado e o
+    // trigger as sincroniza. Não enviamos movement_type para não depender
+    // de abas antigas com schema em cache.
+    const payload = {
       item_id: Number(mv.item_id), person_id: Number(mv.person_id),
-      type: mv.type, quantity: 1, notes: mv.notes || null, user_id: userId,
-    }]);
+      type: mv.type, quantity: 1, notes: mv.notes || null,
+    };
+    if (userId) payload.user_id = userId;
+    const { error } = await supabase.from('stock_movements').insert([payload]);
     if (error) { setMsg('Erro: ' + error.message); return; }
     const newStatus = mv.type === 'saida' ? 'emprestado' : 'estoque';
     const { error: err2 } = await supabase.rpc('set_item_status', {

@@ -11,6 +11,7 @@ export default function Consignacoes() {
   const [cItems, setCItems] = useState([]);
   const [people, setPeople] = useState([]);
   const [items, setItems] = useState([]);
+  const [models, setModels] = useState([]);
   const [msg, setMsg] = useState('');
   const [erro, setErro] = useState('');
 
@@ -32,22 +33,30 @@ export default function Consignacoes() {
   const [addItemId, setAddItemId] = useState('');
 
   const load = async () => {
-    const [co, ci, pe, im] = await Promise.all([
+    const [co, ci, pe, im, mo] = await Promise.all([
       supabase.from('consignments').select('*').order('id', { ascending: false }),
       supabase.from('consignment_items').select('*'),
       supabase.from('people').select('*').order('name'),
       supabase.from('items').select('*').order('id', { ascending: false }),
+      supabase.from('models').select('id,name').order('name'),
     ]);
     if (co.error) { setErro('Erro ao carregar consignações: ' + co.error.message); return; }
     if (ci.error) { setErro('Erro ao carregar itens da consignação. Verifique se o script SQL das consignações foi executado no Supabase.'); return; }
     setConsignments(co.data || []); setCItems(ci.data || []);
     setPeople(pe.data || []); setItems(im.data || []);
+    setModels(mo.data || []);
   };
   useEffect(() => { load(); }, []);
 
   // ---------- cálculos auxiliares ----------
   const itemById = (id) => items.find((i) => i.id === id);
   const personName = (id) => (people.find((p) => p.id === id) || {}).name || '—';
+  // Nome do modelo da peça (coluna "Modelo" do romaneio): models.name > items.name > descrição legada
+  const modelName = (it) => {
+    if (!it) return '—';
+    const m = it.model_id && models.find((x) => x.id === it.model_id);
+    return (m && m.name) || it.name || it.description || '—';
+  };
   const itemLabel = (id) => { const it = itemById(id); return it ? `${it.barcode || 'ID ' + it.id}` : `#${id}`; };
   const cPend = (cid) => cItems.filter((x) => x.consignment_id === cid && !x.returned && !x.sold);
   const cTotal = (cid) => cItems.filter((x) => x.consignment_id === cid).length;
@@ -190,16 +199,42 @@ export default function Consignacoes() {
     else { setMsg(data || 'Consignação excluída.'); if (selC === c.id) setSelC(null); load(); }
   };
 
-  // Romaneio: janela de impressão da lista de peças
+  // Romaneio: janela de impressão da lista de peças — estilo da landing page
+  // (Magenta Vinho #8E2A6E, Cormorant Garamond + DM Sans, bordas suaves)
   const printRomaneio = (c) => {
     const list = cItems.filter((x) => x.consignment_id === c.id);
-    const linhas = list.map((x) => { const it = itemById(x.item_id); const st = x.sold ? 'Vendida' : x.returned ? 'Devolvida' : 'Em poder'; return `<tr><td>${it?.barcode || x.item_id}</td><td>${it?.description || ''}</td><td>R$ ${Number(it?.price_sale || 0).toFixed(2)}</td><td>${st}</td></tr>`; }).join('');
+    const linhas = list.map((x) => { const it = itemById(x.item_id); const st = x.sold ? 'Vendida' : x.returned ? 'Devolvida' : 'Em poder'; return `<tr><td>${it?.barcode || x.item_id}</td><td>${modelName(it)}</td><td>R$ ${Number(it?.price_sale || 0).toFixed(2)}</td><td class="st">${st}</td></tr>`; }).join('');
     const w = window.open('', '_blank', 'width=700,height=600');
-    w.document.write(`<html><head><title>Romaneio Consignação #${c.id}</title><style>body{font-family:sans-serif}table{border-collapse:collapse;width:100%}td,th{border:1px solid #999;padding:6px;font-size:13px}</style></head><body>
-      <h3>Romaneio — Consignação #${c.id}</h3>
-      <p><b>Parceiro:</b> ${personName(c.consignor_id)} | <b>Início:</b> ${c.start_date} | <b>Prazo:</b> ${c.due_date || '—'} | <b>Status:</b> ${c.status}</p>
-      <table><thead><tr><th>Código</th><th>Descrição</th><th>Valor</th><th>Situação</th></tr></thead><tbody>${linhas}</tbody></table>
-      <p><b>Total em poder:</b> R$ ${cValor(c.id).toFixed(2)} (${cPend(c.id).length} peça(s))</p>
+    w.document.write(`<html><head><title>Romaneio Consignação #${c.id}</title>
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+      <style>
+        :root { --primary:#8E2A6E; --foreground:#4a3145; --muted-foreground:#8a7484; --border:#e6d9e2; --accent:#f6ecf3; }
+        * { box-sizing: border-box; }
+        body { font-family:'DM Sans',sans-serif; color:var(--foreground); background:#fff; margin:0; padding:32px 36px; font-size:13px; -webkit-font-smoothing:antialiased; }
+        .eyebrow { color:var(--primary); font-size:10px; font-weight:600; letter-spacing:2.2px; text-transform:uppercase; display:flex; align-items:center; gap:10px; }
+        .eyebrow::before { content:''; width:23px; height:1px; background:var(--primary); }
+        h3.doc-title { font-family:'Cormorant Garamond',serif; font-weight:500; font-size:34px; line-height:1.05; margin:8px 0 4px; color:var(--foreground); }
+        .meta { color:var(--muted-foreground); font-size:12px; margin:0 0 22px; }
+        .meta b { color:var(--foreground); font-weight:500; }
+        table { border-collapse:collapse; width:100%; }
+        th { text-align:left; font-size:10px; letter-spacing:1.6px; text-transform:uppercase; color:var(--primary); border-bottom:1px solid var(--primary); padding:8px 10px; font-weight:600; }
+        td { border-bottom:1px solid var(--border); padding:9px 10px; font-size:13px; }
+        tbody tr:nth-child(even) td { background:var(--accent); }
+        td.st { color:var(--muted-foreground); font-size:12px; }
+        tfoot td { border:none; padding-top:16px; font-size:13px; }
+        .total { color:var(--primary); font-weight:600; }
+        .assinaturas { display:grid; grid-template-columns:1fr 1fr; gap:48px; margin-top:64px; }
+        .assinaturas div { border-top:1px solid var(--border); padding-top:8px; text-align:center; font-size:11px; color:var(--muted-foreground); letter-spacing:.4px; }
+        @media print { body { padding:0; } }
+      </style></head><body>
+      <div class="eyebrow">MAGENTA VINHO</div>
+      <h3 class="doc-title">Romaneio — Consignação #${c.id}</h3>
+      <p class="meta"><b>Parceiro:</b> ${personName(c.consignor_id)} &nbsp;·&nbsp; <b>Início:</b> ${c.start_date} &nbsp;·&nbsp; <b>Prazo:</b> ${c.due_date || '—'} &nbsp;·&nbsp; <b>Status:</b> ${c.status}</p>
+      <table><thead><tr><th>Código</th><th>Modelo</th><th>Valor</th><th>Situação</th></tr></thead><tbody>${linhas}</tbody>
+        <tfoot><tr><td colspan="4"><span class="total">Total em poder: R$ ${cValor(c.id).toFixed(2)}</span> (${cPend(c.id).length} peça(s))</td></tr></tfoot>
+      </table>
+      <div class="assinaturas"><div>Assinatura — Loja</div><div>Assinatura — Parceiro</div></div>
       <script>window.print()</script></body></html>`);
     w.document.close();
   };
@@ -309,7 +344,7 @@ export default function Consignacoes() {
               <form onSubmit={addToConsignment} className="cad-form people-form" style={{ marginTop: 8 }}>
                 <select value={addItemId} onChange={(e) => setAddItemId(e.target.value)}>
                   <option value="">Selecionar peça em estoque…</option>
-                  {activeItems.map((i) => <option key={i.id} value={i.id}>{itemLabel(i.id)} — {i.description || ''} — R$ {Number(i.price_sale || 0).toFixed(2)}</option>)}
+                  {activeItems.map((i) => <option key={i.id} value={i.id}>{itemLabel(i.id)} — {modelName(i)} — R$ {Number(i.price_sale || 0).toFixed(2)}</option>)}
                 </select>
                 <button type="submit">Adicionar à Consignação</button>
               </form>
@@ -318,12 +353,12 @@ export default function Consignacoes() {
 
           <h4 style={{ marginTop: 16 }}>Peças em poder do parceiro ({detailItems.length})</h4>
           <table className="cad-table">
-            <thead><tr><th>Código</th><th>Descrição</th><th>Valor</th><th>Ações</th></tr></thead>
+            <thead><tr><th>Código</th><th>Modelo</th><th>Valor</th><th>Ações</th></tr></thead>
             <tbody>
               {detailItems.map((x) => { const it = itemById(x.item_id); return (
                 <tr key={x.id}>
                   <td data-label="Código">{itemLabel(x.item_id)}</td>
-                  <td data-label="Descrição">{it?.description || '—'}</td>
+                  <td data-label="Modelo">{modelName(it)}</td>
                   <td data-label="Valor">R$ {Number(it?.price_sale || 0).toFixed(2)}</td>
                   <td data-label="Ações">
                     <div className="btn-group">

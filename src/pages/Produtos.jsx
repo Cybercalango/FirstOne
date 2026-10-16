@@ -71,7 +71,7 @@ export default function Produtos() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const [it, setIt] = useState({ name: '', barcode: '', variant_id: '', size: '', price_cost: '', price_sale: '', status: 'estoque', owner_type: 'loja', owner_id: '', acquisition_date: '' });
+  const [it, setIt] = useState({ name: '', barcode: '', variant_id: '', size: '', quantity: 1, price_cost: '', price_sale: '', status: 'estoque', owner_type: 'loja', owner_id: '', acquisition_date: '' });
 
   // Nome enviado ao banco: o digitado, ou derivado do modelo selecionado.
   // (A coluna items.name pode ter NOT NULL no banco legado — nunca envie null.)
@@ -102,24 +102,58 @@ export default function Produtos() {
   const addItem = async (e) => {
     e.preventDefault();
     if (!selModel) { setMsg('Selecione um modelo primeiro.'); return; }
-    if (!it.barcode.trim()) { setMsg('Informe (ou gere) o código interno da peça.'); return; }
+    const qty = Math.max(1, Math.min(500, parseInt(it.quantity || '1', 10) || 1));
     const name = nomeParaSalvar();
     if (!name) { setMsg('Informe um nome para a peça ou selecione um modelo.'); return; }
-    const { error } = await supabase.from('items').insert([{
-      model_id: selModel,
-      name,
-      barcode: it.barcode.trim(),
-      variant_id: it.variant_id ? Number(it.variant_id) : null,
-      size: it.size || null,
-      price_cost: it.price_cost ? Number(it.price_cost) : 0,
-      price_sale: it.price_sale ? Number(it.price_sale) : 0,
-      status: it.status,
-      owner_type: it.owner_type,
-      owner_id: it.owner_type === 'pessoa' && it.owner_id ? Number(it.owner_id) : null,
-      acquisition_date: it.acquisition_date || null,
-    }]);
-    if (error) setMsg('Erro: ' + error.message);
-    else { setIt({ ...it, name: '', barcode: '', size: '', price_cost: '', price_sale: '', acquisition_date: '' }); setMsg('Item cadastrado!'); load(); }
+
+    // 1) Monta o lote de N peças. Cada cópia recebe um código interno
+    //    sequencial (base + sufixo), exceto quando a quantidade é 1
+    //    (usa exatamente o código digitado/gerado).
+    const baseCode = it.barcode.trim();
+    if (!baseCode && qty > 1) { setMsg('Gere o código interno antes de cadastrar mais de uma peça.'); return; }
+    const rows = [];
+    for (let k = 0; k < qty; k++) {
+      const code = qty === 1 ? baseCode : `${baseCode}-${String(k + 1).padStart(2, '0')}`;
+      rows.push({
+        model_id: selModel,
+        name,
+        barcode: code || null,
+        variant_id: it.variant_id ? Number(it.variant_id) : null,
+        size: it.size || null,
+        price_cost: it.price_cost ? Number(it.price_cost) : 0,
+        price_sale: it.price_sale ? Number(it.price_sale) : 0,
+        status: it.status,
+        owner_type: it.owner_type,
+        owner_id: it.owner_type === 'pessoa' && it.owner_id ? Number(it.owner_id) : null,
+        acquisition_date: it.acquisition_date || null,
+      });
+    }
+
+    // 2) Insere as peças (retornando os ids gerados).
+    const { data: created, error } = await supabase.from('items').insert(rows).select('id');
+    if (error) { setMsg('Erro: ' + error.message); return; }
+
+    // 3) Cadastro = primeira entrada de estoque do produto: registra uma
+    //    movimentação 'entrada' por peça (reason 'cadastro'), para que o
+    //    histórico de estoque comece correto.
+    const userId = localStorage.getItem('userId');
+    const movs = (created || []).map((r) => ({
+      item_id: r.id,
+      type: 'entrada',
+      quantity: 1,
+      reason: 'cadastro',
+      notes: `Cadastro inicial (${qty} pç${qty > 1 ? 's' : ''})`,
+      ...(userId ? { user_id: userId } : {}),
+    }));
+    if (movs.length) {
+      const { error: errMv } = await supabase.from('stock_movements').insert(movs);
+      if (errMv) setMsg(`Peças cadastradas, mas não foi possível registrar a entrada de estoque: ${errMv.message}. Use Movimentações → Entrada.`);
+      else setMsg(`${qty} peça(s) cadastrada(s) com entrada de estoque registrada!`);
+    } else {
+      setMsg('Item cadastrado!');
+    }
+    setIt({ ...it, name: '', barcode: '', size: '', quantity: 1, price_cost: '', price_sale: '', acquisition_date: '' });
+    load();
   };
 
   const modelName = (id) => (models.find((x) => x.id === id) || {}).name || '—';
@@ -178,6 +212,10 @@ export default function Produtos() {
             <option value="">Tamanho…</option>
             {sizesForModel().map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>Qtd.:
+            <input type="number" min="1" max="500" style={{ width: 90 }} value={it.quantity}
+              onChange={(e) => setIt({ ...it, quantity: e.target.value })} />
+          </label>
           <input type="number" step="0.01" placeholder="Preço custo" value={it.price_cost} onChange={(e) => setIt({ ...it, price_cost: e.target.value })} />
           <input type="number" step="0.01" placeholder="Preço venda" value={it.price_sale} onChange={(e) => setIt({ ...it, price_sale: e.target.value })} />
           <select value={it.status} onChange={(e) => setIt({ ...it, status: e.target.value })}>
