@@ -18,7 +18,7 @@ function assert(cond, msg) { if (!cond) throw new Error(msg); }
 
 // Carrega o módulo sem tocar em supabase/bwip-js: stub dos imports.
 const src = readFileSync(join(root, 'src', 'utils', 'etiqueta.js'), 'utf8')
-  .replace(/^import bwipjs.*$/m, 'const bwipjs = { toCanvas: () => {} };')
+  .replace(/^import bwipjs.*$/m, 'const bwipjs = { toCanvas: () => {} }; export { bwipjs };')
   .replace(/^import \{ supabase \}.*$/m, 'const supabase = {};');
 const modUrl = 'data:text/javascript;base64,' + Buffer.from(src).toString('base64');
 const E = await import(modUrl);
@@ -113,6 +113,20 @@ await check('gerarZpl escapa caracteres de controle ^ ~ \\ nos dados', async () 
   const zpl = E.gerarZpl([{ codigo: '12^3~4\\5', preco: 1 }]);
   assert(!zpl.includes('FD12^3'), 'escape ^');
   assert(zpl.includes('FD12 3 4 5'), 'chars substituídos por espaço');
+});
+
+// Regression: bwip-js não possui encoder "qr" — o nome correto é "qrcode".
+// Usar "qr" derrubava pré-visualização/impressão com
+// "bwipp.unknownEncoder: unknown encoder name: qr".
+await check('desenharQR usa bcid "qrcode" (não "qr") e tolera falhas', async () => {
+  let opts = null, throwNext = false;
+  E.bwipjs.toCanvas = (_c, o) => { if (throwNext) throw new Error('boom'); opts = o; };
+  const ok = E.desenharQR({}, '12345678|99.90');
+  assert(ok === true, 'deve retornar true quando desenha');
+  assert(opts && opts.bcid === 'qrcode', `bcid deve ser qrcode, veio ${opts && opts.bcid}`);
+  throwNext = true;
+  const fail = E.desenharQR({}, 'x');
+  assert(fail === false, 'falha de desenho retorna false sem lançar');
 });
 
 console.log(failures ? `\n${failures} teste(s) falharam` : '\nTodos os testes passaram');

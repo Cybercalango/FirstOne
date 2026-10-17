@@ -46,15 +46,28 @@ export function desenharBarcode(canvas, codigo) {
   });
 }
 
-/** Desenha o QR Code no canvas. */
+/**
+ * Desenha o QR Code no canvas.
+ * Atenção: no bwip-js (>= v4) o nome do símbolo é 'qrcode' — 'qr' não
+ * existe no registro de encoders e derruba a renderização com
+ * "bwipp.unknownEncoder: unknown encoder name: qr". Mantida tolerância
+ * extra: se por qualquer motivo o QR falhar, a etiqueta ainda é gerada
+ * (campo qrDataUrl fica vazio) em vez de abortar pré-visualização/impressão.
+ */
 export function desenharQR(canvas, texto) {
-  bwipjs.toCanvas(canvas, {
-    bcid: 'qr',
-    text: texto,
-    scale: 3,
-    // tamanho pequeno proposital: cabe em ~10mm de altura útil
-    includetext: false,
-  });
+  try {
+    bwipjs.toCanvas(canvas, {
+      bcid: 'qrcode',
+      text: texto,
+      scale: 3,
+      // tamanho pequeno proposital: cabe em ~10mm de altura útil
+      includetext: false,
+    });
+    return true;
+  } catch (e) {
+    console.error('Falha ao desenhar QR:', e);
+    return false;
+  }
 }
 
 /** Limita o nº de cópias ao intervalo seguro [1, MAX_COPIAS]. */
@@ -108,11 +121,12 @@ export async function renderizarEtiquetas(linhas, barCanvas, qrCanvas) {
   const out = [];
   for (const it of linhas) {
     desenharBarcode(barCanvas, it.codigo);
-    desenharQR(qrCanvas, qrTexto(it.codigo, it.preco));
+    const qrOk = desenharQR(qrCanvas, qrTexto(it.codigo, it.preco));
     out.push({
       ...it,
       barcodeDataUrl: barCanvas.toDataURL('image/png'),
-      qrDataUrl: qrCanvas.toDataURL('image/png'),
+      // se o QR falhou, não reaproveitar desenho anterior do canvas
+      qrDataUrl: qrOk ? qrCanvas.toDataURL('image/png') : '',
     });
   }
   return out;
