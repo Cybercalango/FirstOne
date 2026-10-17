@@ -206,8 +206,11 @@ export default function Produtos() {
     //    e a entrada inicial com quantity = N. O trigger do banco mantém
     //    items.quantity sincronizado com os movimentos.
     const baseCode = it.barcode.trim();
-    if (baseCode.length > 0 && !/^\d{5,13}$/.test(baseCode)) {
-      setMsg('Código deve conter apenas números (5 a 13 dígitos).'); return;
+    if (it.code_origin === 'gerado' && baseCode.length > 0 && !/^\d{8}$/.test(baseCode)) {
+      setMsg('Código gerado pelo sistema deve ter exatamente 8 dígitos (use "Gerar código interno") ou troque a origem para "Legado".'); return;
+    }
+    if (it.code_origin === 'legado' && baseCode.length < 3) {
+      setMsg('Digite o código antigo da etiqueta (mín. 3 caracteres).'); return;
     }
     const rows = [{
       model_id: selModel,

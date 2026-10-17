@@ -57,7 +57,8 @@ export default function Consignacoes() {
     const m = it.model_id && models.find((x) => x.id === it.model_id);
     return (m && m.name) || it.name || it.description || '—';
   };
-  const itemLabel = (id) => { const it = itemById(id); return it ? `${it.barcode || 'ID ' + it.id}` : `#${id}`; };
+  const ehCodigoLegado = (bc) => !!bc && !/^\d{8}(-\d{2})?$/.test(String(bc));
+  const itemLabel = (id) => { const it = itemById(id); return it ? `${it.barcode || 'ID ' + it.id}${ehCodigoLegado(it.barcode) ? '*' : ''}` : `#${id}`; };
   const cPend = (cid) => cItems.filter((x) => x.consignment_id === cid && !x.returned && !x.sold);
   const cTotal = (cid) => cItems.filter((x) => x.consignment_id === cid).length;
   const cValor = (cid) => cPend(cid).reduce((s, x) => s + Number((itemById(x.item_id) || {}).price_sale || 0), 0);
@@ -203,7 +204,7 @@ export default function Consignacoes() {
   // (Magenta Vinho #8E2A6E, Cormorant Garamond + DM Sans, bordas suaves)
   const printRomaneio = (c) => {
     const list = cItems.filter((x) => x.consignment_id === c.id);
-    const linhas = list.map((x) => { const it = itemById(x.item_id); const st = x.sold ? 'Vendida' : x.returned ? 'Devolvida' : 'Em poder'; return `<tr><td>${it?.barcode || x.item_id}</td><td>${modelName(it)}</td><td>R$ ${Number(it?.price_sale || 0).toFixed(2)}</td><td class="st">${st}</td></tr>`; }).join('');
+    const linhas = list.map((x) => { const it = itemById(x.item_id); const st = x.sold ? 'Vendida' : x.returned ? 'Devolvida' : 'Em poder'; return `<tr><td>${it?.barcode || x.item_id}${it && ehCodigoLegado(it.barcode) ? '*' : ''}</td><td>${modelName(it)}</td><td>R$ ${Number(it?.price_sale || 0).toFixed(2)}</td><td class="st">${st}</td></tr>`; }).join('');
     const w = window.open('', '_blank', 'width=700,height=600');
     w.document.write(`<html><head><title>Romaneio Consignação #${c.id}</title>
       <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -235,6 +236,7 @@ export default function Consignacoes() {
         <tfoot><tr><td colspan="4"><span class="total">Total em poder: R$ ${cValor(c.id).toFixed(2)}</span> (${cPend(c.id).length} peça(s))</td></tr></tfoot>
       </table>
       <div class="assinaturas"><div>Assinatura — Loja</div><div>Assinatura — Parceiro</div></div>
+      <p style="font-size:10px;color:#6b5a66;margin-top:8px">* Código legado (etiqueta antiga) — será substituído por código do sistema quando o estoque zerar.</p>
       <script>window.print()</script></body></html>`);
     w.document.close();
   };
