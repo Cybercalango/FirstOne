@@ -147,3 +147,79 @@ NOTIFY pgrst, 'reload schema';
 SELECT column_name, data_type, is_nullable, column_default
 FROM information_schema.columns
 WHERE table_schema='public' AND table_name='items' AND column_name='quantity';
+
+-- =====================================================================
+-- 6) CONSOLIDAÇÃO DOS LEGADOS (opcional, idempotente)
+-- Junta em UM item as peças duplicadas geradas pelo cadastro antigo
+-- (lotes base-01..NN do mesmo produto), somando quantidades. As
+-- etiquetas impressas dos itens fundidos continuam válidas: cada
+-- barcode vira um alias registrado em items_barcode_aliases, então a
+-- pesquisa/leitor encontra o item consolidado por qualquer código.
+-- =====================================================================
+BEGIN;
+
+CREATE TABLE IF NOT EXISTS public.items_barcode_aliases (
+  barcode   TEXT PRIMARY KEY,
+  item_id   BIGINT NOT NULL REFERENCES public.items(id) ON DELETE CASCADE,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+-- Agrupa por (modelo, variação, tamanho, status, dono, preço) os itens
+-- com sufixo -NN no barcode e mais de 1 linha; mantém o menor id.
+WITH dup AS (
+  SELECT regexp_replace(barcode, '-\d+$', '') AS base,
+         model_id, variant_id, size, status, owner_type, owner_id, price_sale, price_cost, name,
+         MIN(id) AS keep_id,
+         COUNT(*) AS n
+  FROM public.items
+  WHERE barcode ~ '-\d{2}$'
+  GROUP BY 1,2,3,4,5,6,7,8,9
+  HAVING COUNT(*) > 1
+)
+INSERT INTO public.items_barcode_aliases (barcode, item_id)
+SELECT i.barcode, d.keep_id
+FROM public.items i
+JOIN dup d ON d.base = regexp_replace(i.barcode, '-\d+$','')
+         AND d.keep_id <> i.id
+         AND COALESCE(i.model_id,-1)   = COALESCE(d.model_id,-1)
+         AND COALESCE(i.variant_id,-1) = COALESCE(d.variant_id,-1)
+         AND COALESCE(i.size,'')       = COALESCE(d.size,'')
+WHERE NOT EXISTS (SELECT 1 FROM public.items_barcode_aliases a WHERE a.barcode = i.barcode)
+ON CONFLICT (barcode) DO NOTHING;
+
+-- Soma as quantidades nos sobreviventes (via quantity atual + unidades legadas).
+WITH dup AS (
+  SELECT regexp_replace(barcode, '-\d+$','') AS base,
+         model_id, variant_id, size, status, owner_type, owner_id, price_sale, price_cost, name,
+         MIN(id) AS keep_id, SUM(GREATEST(quantity,1)) AS total_qtd
+  FROM public.items
+  WHERE barcode ~ '-\d{2}$'
+  GROUP BY 1,2,3,4,5,6,7,8,9
+  HAVING COUNT(*) > 1
+)
+UPDATE public.items i
+SET quantity = d.total_qtd
+FROM dup d
+WHERE i.id = d.keep_id AND i.quantity IS DISTINCT FROM d.total_qtd;
+
+-- Move histórico/movimentos dos fundidos para o sobrevivente e apaga as linhas extras.
+UPDATE public.stock_movements m
+SET item_id = a.item_id
+FROM public.items_barcode_aliases a
+WHERE m.item_id IN (SELECT id FROM public.items i JOIN public.items_barcode_aliases x ON x.barcode = i.barcode AND x.item_id <> i.id);
+
+DELETE FROM public.items
+WHERE id IN (SELECT i.id FROM public.items i
+             JOIN public.items_barcode_aliases a ON a.barcode = i.barcode
+             WHERE a.item_id <> i.id);
+
+COMMIT;
+
+NOTIFY pgrst, 'reload schema';
+
+-- Conferência: itens consolidados e seus aliases.
+SELECT i.id, i.barcode, i.name, i.quantity,
+       (SELECT array_agg(a.barcode) FROM public.items_barcode_aliases a WHERE a.item_id = i.id) AS aliases
+FROM public.items i
+WHERE EXISTS (SELECT 1 FROM public.items_barcode_aliases a WHERE a.item_id = i.id)
+ORDER BY i.id;
