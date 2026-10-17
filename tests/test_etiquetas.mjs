@@ -91,26 +91,31 @@ await check('getEtiquetasHTML: página 30x14mm + uma div por etiqueta + escape',
   assert((html.match(/class="etiqueta"/g) || []).length === 2, '2 etiquetas');
   // o nome NÃO é impresso na etiqueta; mesmo assim nada de HTML cru vazar
   assert(!html.includes('<b>Anel</b>'), 'escape XSS / nome nao impresso');
-  assert(html.includes('R$129,90'), 'preco formatado');
   assert(html.includes('window.print()'), 'autoPrint por padrão');
   assert(!E.getEtiquetasHTML(imgs, { autoPrint: false }).includes('window.print()'), 'autoPrint off');
 });
 
-// Layout atual (pedido do usuário): sem nome da peça na etiqueta impressa e
-// preço SEM vírgula/ponto como "continuidade" do código do item.
-await check('getEtiquetasHTML: não imprime nome; preço contínuo junto ao código', async () => {
+// Layout ATUAL (pedido do usuário): a etiqueta contém APENAS o texto
+// "código+preço contínuo" e o Code128 abaixo. Sem nome, sem QR, sem preço
+// formatado, sem bloco de código separado em cima.
+await check('getEtiquetasHTML: só código contínuo + barcode (sem QR/preco/nome)', async () => {
   const imgs = [{ codigo: '00012345', nome: 'Camiseta Batman', preco: 129.9, barcodeDataUrl: 'data:x', qrDataUrl: 'data:y' }];
   const html = E.getEtiquetasHTML(imgs);
   assert(!html.includes('Camiseta Batman'), 'nome nao deve aparecer na etiqueta');
-  assert(html.includes('class="continua">0001234512990<'), 'codigo+preco sem separadores');
+  assert(html.includes('>0001234512990<'), 'codigo+preco continuo como unico texto');
+  assert(!html.includes('R$'), 'sem preco formatado');
+  assert(!html.includes('class="qr"') && !html.includes('data:y'), 'sem QR na etiqueta');
+  assert(!html.includes('>00012345<'), 'sem bloco de codigo separado');
 });
 
-await check('previewDeEtiquetas: mesmo layout (sem nome, com continuidade)', async () => {
+await check('previewDeEtiquetas: mesmo layout enxuto (so continuidade + barcode)', async () => {
   const imgs = Array.from({ length: 6 }, (_, i) => ({ codigo: 'c' + i, nome: 'Nome ' + i, preco: i, barcodeDataUrl: 'd', qrDataUrl: 'd' }));
   const pv = E.previewDeEtiquetas(imgs);
   assert((pv.match(/pv-etiqueta/g) || []).length >= 6, '6 previews');
   assert(!pv.includes('Nome 0'), 'preview tambem sem nome');
   assert(pv.includes('c00'), 'continuidade codigo+preco no preview');
+  assert(!pv.includes('pv-qr'), 'preview sem QR');
+  assert(!pv.includes('R$'), 'preview sem preco formatado');
 });
 
 await check('gerarZpl: geometria 203dpi, density/speed do painel, comandos presentes', async () => {
@@ -119,9 +124,9 @@ await check('gerarZpl: geometria 203dpi, density/speed do painel, comandos prese
   assert(zpl.includes('^PW240') && zpl.includes('^LL112'), '30x14mm em dots');
   assert(zpl.includes('^SD12') && zpl.includes('^SV4'), 'densidade 12 velocidade 4');
   assert(zpl.includes('^BCN') && zpl.includes('FD12345670'), 'code128 com dados');
-  assert(zpl.includes('^BQN'), 'qr presente');
-  assert(zpl.includes('R$59,90'), 'preco no ZPL');
   assert(zpl.includes('FD123456705990'), 'codigo+preco continuo no ZPL');
+  assert(!zpl.includes('^BQN'), 'QR removido do ZPL');
+  assert(!zpl.includes('R$'), 'preco formatado removido do ZPL');
 });
 
 await check('precoContinuo/codigoMaisPreco: apenas dígitos, sem virgula ou ponto', async () => {
@@ -131,6 +136,17 @@ await check('precoContinuo/codigoMaisPreco: apenas dígitos, sem virgula ou pont
   assert(E.precoContinuo(undefined) === '0', 'vazio -> 0');
   assert(E.codigoMaisPreco('00012345', 129.9) === '0001234512990', 'concatenacao direta');
   assert(!/[,\s]/.test(E.codigoMaisPreco('ABC-1', 7)), 'sem separadores nem espacos');
+});
+
+// Sufixo legado "-NN" (ex.: "40670211-01") NAO deve aparecer na etiqueta.
+await check('sufixo legado -NN removido do codigo impresso', async () => {
+  assert(E.limparSufixoLegado('40670211-01') === '40670211', 'strip -01');
+  assert(E.limparSufixoLegado('40670211-15') === '40670211', 'strip -15');
+  assert(E.limparSufixoLegado('40670211') === '40670211', 'sem sufixo fica igual');
+  assert(E.limparSufixoLegado('40670211-15990') === '40670211-15990', '4+ digitos nao e sufixo');
+  assert(E.codigoMaisPreco('40670211-01', 59.9) === '406702115990', 'formato pedido pelo usuario');
+  const l = E.linhaDeItem({ id: 9, barcode: '40670211-01', quantity: 6, price_sale: 59.9 });
+  assert(l.codigo === '40670211', `linhaDeItem limpa o sufixo, veio ${l.codigo}`);
 });
 
 await check('gerarZpl escapa caracteres de controle ^ ~ \\ nos dados', async () => {

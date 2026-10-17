@@ -42,9 +42,14 @@ export function precoContinuo(v) {
   return String(Math.round(Number(v || 0) * 100));
 }
 
+/** Remove o sufixo legado "-NN" de códigos tipo "40670211-01". */
+export function limparSufixoLegado(codigo) {
+  return String(codigo ?? '').trim().replace(/-\d{1,2}$/, '');
+}
+
 /** Concatena código + preço contínuo (ex.: 00012345 + 12990 = "0001234512990"). */
 export function codigoMaisPreco(codigo, preco) {
-  return `${String(codigo)}${precoContinuo(preco)}`;
+  return `${limparSufixoLegado(codigo)}${precoContinuo(preco)}`;
 }
 
 /** Monta o texto curto do QR (código + preço) para leitura rápida. */
@@ -98,7 +103,8 @@ export function normalizarCopias(v) {
 export function linhaDeItem(it) {
   return {
     itemId: it.id,
-    codigo: String(it.barcode || '').trim() || String(it.id),
+    // código SEM o sufixo legado "-NN" (ex.: "40670211-01" -> "40670211")
+    codigo: limparSufixoLegado(String(it.barcode || '').trim()) || String(it.id),
     nome: it.name || it.description || '',
     preco: Number(it.price_sale || 0),
     // prioridade: override escolhido na tela > quantidade informada p/ o
@@ -164,15 +170,8 @@ export function getEtiquetasHTML(imgs, opts = {}) {
   const { autoPrint = true } = opts;
   const etiquetas = imgs.map((it) => `
     <div class="etiqueta">
-      <div class="col-esq">
-        <div class="cod">${esc(it.codigo)}</div>
-        <img class="bar" src="${it.barcodeDataUrl}" alt="${esc(it.codigo)}" />
-        <div class="continua">${esc(codigoMaisPreco(it.codigo, it.preco))}</div>
-      </div>
-      <div class="col-dir">
-        <img class="qr" src="${it.qrDataUrl}" alt="QR" />
-        <div class="preco">${formatarPreco(it.preco)}</div>
-      </div>
+      <div class="cod">${esc(codigoMaisPreco(it.codigo, it.preco))}</div>
+      <img class="bar" src="${it.barcodeDataUrl}" alt="${esc(it.codigo)}" />
     </div>`).join('\n');
 
   return `<!doctype html>
@@ -184,17 +183,13 @@ export function getEtiquetasHTML(imgs, opts = {}) {
   body { font-family: 'Arial Narrow', Arial, sans-serif; background:#fff; }
   .etiqueta {
     width: ${ETIQUETA.largura_mm}mm; height: ${ETIQUETA.altura_mm}mm;
-    display: flex; overflow: hidden; page-break-after: always;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    overflow: hidden; page-break-after: always;
     break-after: page; position: relative;
   }
-  .col-esq { flex: 1; display:flex; flex-direction:column; justify-content:center; padding-left:.8mm; min-width:0; }
-  .cod { font-size: 2.2mm; font-weight: bold; letter-spacing: .15mm; line-height: 2.4mm; }
-  .bar { width: 100%; height: 6mm; object-fit: contain; image-rendering: pixelated; }
-  /* preço SEM vírgula/ponto, colado ao código do item (continuidade) */
-  .continua { font-size: 1.9mm; font-weight: bold; letter-spacing: .1mm; line-height: 2.1mm; white-space: nowrap; }
-  .col-dir { width: 9mm; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-  .qr { width: 5mm; height: 5mm; image-rendering: pixelated; }
-  .preco { font-size: 1.8mm; font-weight: bold; line-height: 2.2mm; }
+  /* único texto da etiqueta: código do item + preço contínuo (sem sufixo -NN) */
+  .cod { font-size: 2.4mm; font-weight: bold; letter-spacing: .1mm; line-height: 2.6mm; white-space: nowrap; }
+  .bar { width: 92%; height: 7mm; object-fit: contain; image-rendering: pixelated; margin-top:.6mm; }
 </style></head>
 <body>${etiquetas}
 ${autoPrint ? '<script>window.onload=function(){setTimeout(function(){window.print()},250)};</script>' : ''}
@@ -210,29 +205,15 @@ ${autoPrint ? '<script>window.onload=function(){setTimeout(function(){window.pri
 export function previewDeEtiquetas(imgs) {
   const etiquetas = imgs.map((it, idx) => `
     <div class="pv-etiqueta" title="Etiqueta ${idx + 1}">
-      <div class="pv-col-esq">
-        <div class="pv-cod">${esc(it.codigo)}</div>
-        <img class="pv-bar" src="${it.barcodeDataUrl}" alt="" />
-        <div class="pv-continua">${esc(codigoMaisPreco(it.codigo, it.preco))}</div>
-      </div>
-      <div class="pv-col-dir">
-        <img class="pv-qr" src="${it.qrDataUrl}" alt="" />
-        <div class="pv-preco">${formatarPreco(it.preco)}</div>
-      </div>
+      <div class="pv-cod">${esc(codigoMaisPreco(it.codigo, it.preco))}</div>
+      <img class="pv-bar" src="${it.barcodeDataUrl}" alt="" />
     </div>`).join('\n');
-  // escala ~8px/mm -> 30x14mm = 240x112px? Não: mantemos proporção exata da
-  // etiqueta física (metade do comprimento anterior): 120x56px (mesma área útil
-  // das linhas antigas de 240px cortadas pela metade).
+  // proporção exata da etiqueta física 30x14mm -> 120x56px
   return `<style>
     .pv-wrap{display:flex;flex-wrap:wrap;gap:6px;padding:6px;background:#eee;border-radius:8px;}
-    .pv-etiqueta{width:120px;height:56px;display:flex;overflow:hidden;background:#fff;border:1px dashed #999;box-sizing:border-box;font-family:Arial,sans-serif;}
-    .pv-col-esq{flex:1;display:flex;flex-direction:column;justify-content:center;padding-left:2px;min-width:0;}
-    .pv-cod{font-size:7px;font-weight:bold;letter-spacing:.5px;line-height:8px;}
-    .pv-bar{width:100%;height:20px;object-fit:contain;image-rendering:pixelated;}
-    .pv-continua{font-size:6px;font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-    .pv-col-dir{width:26px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
-    .pv-qr{width:13px;height:13px;image-rendering:pixelated;}
-    .pv-preco{font-size:6px;font-weight:bold;}
+    .pv-etiqueta{width:120px;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;background:#fff;border:1px dashed #999;box-sizing:border-box;font-family:Arial,sans-serif;}
+    .pv-cod{font-size:8px;font-weight:bold;letter-spacing:.3px;line-height:9px;white-space:nowrap;}
+    .pv-bar{width:92%;height:22px;object-fit:contain;image-rendering:pixelated;margin-top:2px;}
   </style><div class="pv-wrap">${etiquetas}</div>`;
 }
 
@@ -259,17 +240,11 @@ export function gerarZpl(linhas, opts = {}) {
   const density = opts.density ?? 12;
   const speed = opts.speed ?? 4;
   const codX = 6, codY = 4;
-  const dirW = Math.round(9 * dpmm);          // 72 dots p/ QR+preço
-  const barH = Math.round(5 * dpmm);          // 40 dots
-  const qrSize = Math.round(5 * dpmm);        // 40 dots
-  const dirX = W - dirW;
+  const barH = Math.round(7 * dpmm);          // 56 dots
 
   const blocos = linhas.map((it) => `
-^FO${codX},${codY}^A0N,${Math.round(2.2 * dpmm)},${Math.round(2.2 * dpmm)}^FD${zplTexto(it.codigo)}^FS
-^FO${codX},${codY + Math.round(2.6 * dpmm)}^BY2,3,${barH}^BCN,${barH},N,N,N^FD${zplTexto(it.codigo)}^FS
-^FO${codX},${codY + Math.round(9.4 * dpmm)}^A0N,${Math.round(1.9 * dpmm)},${Math.round(1.9 * dpmm)}^FD${zplTexto(codigoMaisPreco(it.codigo, it.preco))}^FS
-^FO${dirX + Math.round((dirW - qrSize) / 2)},${codY}^BQN,2,3^FDLA,${zplTexto(qrTexto(it.codigo, it.preco))}^FS
-^FO${dirX},${H - Math.round(2.6 * dpmm)}^A0N,${Math.round(1.8 * dpmm)},${Math.round(1.8 * dpmm)}^FD${zplTexto(formatarPreco(it.preco))}^FS`).join('\n');
+^FO${codX},${codY}^A0N,${Math.round(2.4 * dpmm)},${Math.round(2.4 * dpmm)}^FD${zplTexto(codigoMaisPreco(it.codigo, it.preco))}^FS
+^FO${Math.round(W * 0.04)},${codY + Math.round(3.4 * dpmm)}^BY2,3,${barH}^BCN,${barH},N,N,N^FD${zplTexto(limparSufixoLegado(it.codigo))}^FS`).join('\n');
 
   return `^XA
 ^CI28
