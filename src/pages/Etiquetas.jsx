@@ -14,7 +14,7 @@ import { supabase } from '../supabaseClient';
 import BackBar from '../components/BackBar';
 import LeitorCodigo from '../components/LeitorCodigo';
 import {
-  desenharBarcode, desenharQR, qrTexto, getEtiquetasHTML, formatarPreco,
+  getEtiquetasHTML, formatarPreco,
   linhaDeItem, expandirCopias, renderizarEtiquetas, previewDeEtiquetas,
   gerarZpl, baixarZpl, enviarZpl, registrarImpressao, resolverItemPorCodigo,
   normalizarCopias, MAX_COPIAS,
@@ -35,7 +35,6 @@ export default function Etiquetas() {
   const [previewInfo, setPreviewInfo] = useState(null); // linhas expandidas
   const [historico, setHistorico] = useState([]);
   const barRef = useRef(null);
-  const qrRef = useRef(null);
 
   async function load() {
     let q = supabase.from('items').select('*').order('created_at', { ascending: false }).limit(500);
@@ -103,10 +102,10 @@ export default function Etiquetas() {
 
   async function gerarPreview() {
     if (!selItens.length) { setMsg('Selecione ao menos uma peça.'); return; }
-    if (!barRef.current || !qrRef.current) { setMsg('Componentes de desenho indisponíveis.'); return; }
+    if (!barRef.current) { setMsg('Componentes de desenho indisponíveis.'); return; }
     const linhas = linhasDoLote();
     if (!linhas.length) { setMsg('Nenhuma etiqueta gerada — confira a quantidade escolhida.'); return; }
-    const imgs = await renderizarEtiquetas(linhas, barRef.current, qrRef.current);
+    const imgs = await renderizarEtiquetas(linhas, barRef.current);
     setPreview(previewDeEtiquetas(imgs));
     setPreviewInfo(imgs);
     setMsg(`${linhas.length} etiqueta(s) prontas (${selItens.length} peça(s)). Confira e clique em Imprimir.`);
@@ -249,9 +248,8 @@ export default function Etiquetas() {
         </div>
       )}
 
-      {/* canvases ocultos usados só para gerar as imagens */}
+      {/* canvas oculto usado só para gerar a imagem do barcode */}
       <canvas ref={barRef} style={{ display: 'none' }} />
-      <canvas ref={qrRef} style={{ display: 'none' }} />
     </div>
   );
 }
