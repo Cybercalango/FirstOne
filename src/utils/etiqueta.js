@@ -1,9 +1,15 @@
 // =====================================================================
-// Módulo de impressão de etiquetas 60mm x 14mm (padrão da empresa)
+// Módulo de impressão de etiquetas 30mm x 14mm (metade do comprimento
+// da pré-visualização antiga de 60mm — padrão atual da empresa)
 // ---------------------------------------------------------------------
 // Layout por coluna:
 //   [ código interno 8 dígitos ]      [ QR Code curto ]
 //   [ código de barras Code128  ]     [ preço           ]
+//   [ "R$<preço sem separadores>" sob o barcode, como continuação
+//     do código do item — ex.: código 00012345 e preço R$129,90
+//     aparecem juntos como "0001234512990" ]
+// Obs.: o NOME DA PEÇA não é impresso na etiqueta (decisão do negócio);
+//       ele continua disponível na tela para busca/seleção.
 //
 // Recursos:
 //   * Cópia múltipla: peças cadastradas por QUANTIDADE (sql/27) geram
@@ -18,7 +24,7 @@
 import bwipjs from 'bwip-js';
 import { supabase } from '../supabaseClient';
 
-export const ETIQUETA = { largura_mm: 60, altura_mm: 14 };
+export const ETIQUETA = { largura_mm: 30, altura_mm: 14 };
 export const DPI_PADRAO = 203; // impressoras térmicas de etiquetas: 8 dots/mm
 export const MAX_COPIAS = 999; // limite de cópias por peça / por lote
 
@@ -26,6 +32,19 @@ export const MAX_COPIAS = 999; // limite de cópias por peça / por lote
 export function formatarPreco(v) {
   const n = Number(v || 0);
   return 'R$' + n.toFixed(2).replace('.', ',');
+}
+
+/**
+ * Preço "contínuo": apenas dígitos, sem vírgula/ponto/espaço — ex.:
+ * 129.90 -> "12990". Usado na etiqueta como continuação do código do item.
+ */
+export function precoContinuo(v) {
+  return String(Math.round(Number(v || 0) * 100));
+}
+
+/** Concatena código + preço contínuo (ex.: 00012345 + 12990 = "0001234512990"). */
+export function codigoMaisPreco(codigo, preco) {
+  return `${String(codigo)}${precoContinuo(preco)}`;
 }
 
 /** Monta o texto curto do QR (código + preço) para leitura rápida. */
@@ -135,9 +154,11 @@ export async function renderizarEtiquetas(linhas, barCanvas, qrCanvas) {
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 /**
- * Gera o documento HTML de impressão (uma etiqueta por página 60x14mm).
+ * Gera o documento HTML de impressão (uma etiqueta por página 30x14mm).
  * imgs: resultado de renderizarEtiquetas (com barcodeDataUrl/qrDataUrl).
  * opts.autoPrint: abre o diálogo de impressão automaticamente.
+ * Layout atual (sem nome da peça): código interno, barcode e preço contínuo
+ * "codigopreço" como bloco único sob a imagem do Code128; QR + preço à direita.
  */
 export function getEtiquetasHTML(imgs, opts = {}) {
   const { autoPrint = true } = opts;
@@ -145,8 +166,8 @@ export function getEtiquetasHTML(imgs, opts = {}) {
     <div class="etiqueta">
       <div class="col-esq">
         <div class="cod">${esc(it.codigo)}</div>
-        ${it.nome ? `<div class="nome">${esc(it.nome)}</div>` : ''}
         <img class="bar" src="${it.barcodeDataUrl}" alt="${esc(it.codigo)}" />
+        <div class="continua">${esc(codigoMaisPreco(it.codigo, it.preco))}</div>
       </div>
       <div class="col-dir">
         <img class="qr" src="${it.qrDataUrl}" alt="QR" />
@@ -166,13 +187,14 @@ export function getEtiquetasHTML(imgs, opts = {}) {
     display: flex; overflow: hidden; page-break-after: always;
     break-after: page; position: relative;
   }
-  .col-esq { flex: 1; display:flex; flex-direction:column; justify-content:center; padding-left:1mm; min-width:0; }
-  .cod { font-size: 2.6mm; font-weight: bold; letter-spacing: .3mm; line-height: 3mm; }
-  .nome { font-size: 1.9mm; line-height: 2.2mm; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 44mm; opacity:.85; }
-  .bar { width: 100%; height: 7mm; object-fit: contain; image-rendering: pixelated; }
-  .col-dir { width: 13mm; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-  .qr { width: 7mm; height: 7mm; image-rendering: pixelated; }
-  .preco { font-size: 2.4mm; font-weight: bold; line-height: 3mm; }
+  .col-esq { flex: 1; display:flex; flex-direction:column; justify-content:center; padding-left:.8mm; min-width:0; }
+  .cod { font-size: 2.2mm; font-weight: bold; letter-spacing: .15mm; line-height: 2.4mm; }
+  .bar { width: 100%; height: 6mm; object-fit: contain; image-rendering: pixelated; }
+  /* preço SEM vírgula/ponto, colado ao código do item (continuidade) */
+  .continua { font-size: 1.9mm; font-weight: bold; letter-spacing: .1mm; line-height: 2.1mm; white-space: nowrap; }
+  .col-dir { width: 9mm; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .qr { width: 5mm; height: 5mm; image-rendering: pixelated; }
+  .preco { font-size: 1.8mm; font-weight: bold; line-height: 2.2mm; }
 </style></head>
 <body>${etiquetas}
 ${autoPrint ? '<script>window.onload=function(){setTimeout(function(){window.print()},250)};</script>' : ''}
@@ -180,33 +202,37 @@ ${autoPrint ? '<script>window.onload=function(){setTimeout(function(){window.pri
 }
 
 /**
- * Pré-visualização em tela: mesmo layout da impressão, mas dentro de um
- * container do app (não dispara window.print). Retorna HTML pronto para
+ * Pré-visualização em tela: mesmo layout da impressão (30x14mm), mas dentro
+ * de um container do app (não dispara window.print). Retorna HTML pronto para
  * ser injetado via dangerouslySetInnerHTML ou colado num preview.
+ * Sem nome da peça; preço contínuo ("código+preço") abaixo do barcode.
  */
 export function previewDeEtiquetas(imgs) {
   const etiquetas = imgs.map((it, idx) => `
     <div class="pv-etiqueta" title="Etiqueta ${idx + 1}">
       <div class="pv-col-esq">
         <div class="pv-cod">${esc(it.codigo)}</div>
-        ${it.nome ? `<div class="pv-nome">${esc(it.nome)}</div>` : ''}
         <img class="pv-bar" src="${it.barcodeDataUrl}" alt="" />
+        <div class="pv-continua">${esc(codigoMaisPreco(it.codigo, it.preco))}</div>
       </div>
       <div class="pv-col-dir">
         <img class="pv-qr" src="${it.qrDataUrl}" alt="" />
         <div class="pv-preco">${formatarPreco(it.preco)}</div>
       </div>
     </div>`).join('\n');
+  // escala ~8px/mm -> 30x14mm = 240x112px? Não: mantemos proporção exata da
+  // etiqueta física (metade do comprimento anterior): 120x56px (mesma área útil
+  // das linhas antigas de 240px cortadas pela metade).
   return `<style>
     .pv-wrap{display:flex;flex-wrap:wrap;gap:6px;padding:6px;background:#eee;border-radius:8px;}
-    .pv-etiqueta{width:240px;height:56px;display:flex;overflow:hidden;background:#fff;border:1px dashed #999;box-sizing:border-box;font-family:Arial,sans-serif;}
-    .pv-col-esq{flex:1;display:flex;flex-direction:column;justify-content:center;padding-left:4px;min-width:0;}
-    .pv-cod{font-size:11px;font-weight:bold;letter-spacing:1px;line-height:13px;}
-    .pv-nome{font-size:8px;line-height:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.8;}
-    .pv-bar{width:100%;height:26px;object-fit:contain;image-rendering:pixelated;}
-    .pv-col-dir{width:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
-    .pv-qr{width:26px;height:26px;image-rendering:pixelated;}
-    .pv-preco{font-size:10px;font-weight:bold;}
+    .pv-etiqueta{width:120px;height:56px;display:flex;overflow:hidden;background:#fff;border:1px dashed #999;box-sizing:border-box;font-family:Arial,sans-serif;}
+    .pv-col-esq{flex:1;display:flex;flex-direction:column;justify-content:center;padding-left:2px;min-width:0;}
+    .pv-cod{font-size:7px;font-weight:bold;letter-spacing:.5px;line-height:8px;}
+    .pv-bar{width:100%;height:20px;object-fit:contain;image-rendering:pixelated;}
+    .pv-continua{font-size:6px;font-weight:bold;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .pv-col-dir{width:26px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+    .pv-qr{width:13px;height:13px;image-rendering:pixelated;}
+    .pv-preco{font-size:6px;font-weight:bold;}
   </style><div class="pv-wrap">${etiquetas}</div>`;
 }
 
@@ -220,28 +246,30 @@ function zplTexto(s) {
 }
 
 /**
- * Monta o comando ZPL para uma folha de etiquetas 60x14mm.
+ * Monta o comando ZPL para uma folha de etiquetas 30x14mm.
  * Configuração padrão do painel citada no projeto: density 12, speed 4.
  * linhas: [{ codigo, preco }] (já expandidas por cópias).
+ * Sem nome da peça; preço SEM separadores colado ao código ("continuidade").
  */
 export function gerarZpl(linhas, opts = {}) {
   const dpi = opts.dpi || DPI_PADRAO;
   const dpmm = dpi / 25.4;                    // 8 dots/mm em 203dpi
-  const W = Math.round(ETIQUETA.largura_mm * dpmm); // 480 dots
+  const W = Math.round(ETIQUETA.largura_mm * dpmm); // 240 dots
   const H = Math.round(ETIQUETA.altura_mm * dpmm);  // 112 dots
   const density = opts.density ?? 12;
   const speed = opts.speed ?? 4;
-  const codX = 8, codY = 6;
-  const barH = Math.round(7 * dpmm);          // 56 dots
-  const barW = W - 13 * dpmm - 16;            // coluna esq menos margens
-  const dirX = W - Math.round(13 * dpmm);
-  const qrSize = Math.round(7 * dpmm);
+  const codX = 6, codY = 4;
+  const dirW = Math.round(9 * dpmm);          // 72 dots p/ QR+preço
+  const barH = Math.round(5 * dpmm);          // 40 dots
+  const qrSize = Math.round(5 * dpmm);        // 40 dots
+  const dirX = W - dirW;
 
   const blocos = linhas.map((it) => `
-^FO${codX},${codY}^A0N,${Math.round(2.6 * dpmm)},${Math.round(2.6 * dpmm)}^FD${zplTexto(it.codigo)}^FS
-^FO${codX},${codY + Math.round(3.2 * dpmm)}^BY2,3,${barH}^BCN,${barH},Y,N,N^FD${zplTexto(it.codigo)}^FS
-^FO${dirX + Math.round((13 * dpmm - qrSize) / 2)},${codY}^BQN,2,4^FDLA,${zplTexto(qrTexto(it.codigo, it.preco))}^FS
-^FO${dirX},${H - Math.round(3.4 * dpmm)}^A0N,${Math.round(2.4 * dpmm)},${Math.round(2.4 * dpmm)}^FD${zplTexto(formatarPreco(it.preco))}^FS`).join('\n');
+^FO${codX},${codY}^A0N,${Math.round(2.2 * dpmm)},${Math.round(2.2 * dpmm)}^FD${zplTexto(it.codigo)}^FS
+^FO${codX},${codY + Math.round(2.6 * dpmm)}^BY2,3,${barH}^BCN,${barH},N,N,N^FD${zplTexto(it.codigo)}^FS
+^FO${codX},${codY + Math.round(9.4 * dpmm)}^A0N,${Math.round(1.9 * dpmm)},${Math.round(1.9 * dpmm)}^FD${zplTexto(codigoMaisPreco(it.codigo, it.preco))}^FS
+^FO${dirX + Math.round((dirW - qrSize) / 2)},${codY}^BQN,2,3^FDLA,${zplTexto(qrTexto(it.codigo, it.preco))}^FS
+^FO${dirX},${H - Math.round(2.6 * dpmm)}^A0N,${Math.round(1.8 * dpmm)},${Math.round(1.8 * dpmm)}^FD${zplTexto(formatarPreco(it.preco))}^FS`).join('\n');
 
   return `^XA
 ^CI28
