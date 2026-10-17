@@ -1,8 +1,10 @@
 // Testa o módulo de impressão de etiquetas (src/utils/etiqueta.js) em Node:
 //  - expandirCopias: peça com estoque N vira N etiquetas; override respeitado
-//  - getEtiquetasHTML: @page 60x14mm, uma etiqueta por página, escape de HTML
+//  - getEtiquetasHTML: @page 30x14mm, uma etiqueta por página, escape de HTML
 //  - gerarZpl: dimensões em dots (203dpi), ^XA/^XZ, SD12/SV4, QR e Code128
 //  - previewDeEtiquetas: renderiza todas as linhas
+//  - layout atual: sem nome da peça; preço SEM separadores como continuação
+//    do código ("codigoMaisPreco")
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -79,34 +81,56 @@ await check('expandirCopias: total limita a emissão', async () => {
   assert(E.expandirCopias(itens, { copiasPorItem: 3, total: 5 }).length === 5, 'porItem+total');
 });
 
-await check('getEtiquetasHTML: página 60x14mm + uma div por etiqueta + escape', async () => {
+await check('getEtiquetasHTML: página 30x14mm + uma div por etiqueta + escape', async () => {
   const imgs = [
     { codigo: '12345670', nome: '<b>Anel</b>', preco: 129.9, barcodeDataUrl: 'data:x', qrDataUrl: 'data:y' },
     { codigo: '12345671', nome: '', preco: 0, barcodeDataUrl: 'data:x', qrDataUrl: 'data:y' },
   ];
   const html = E.getEtiquetasHTML(imgs);
-  assert(html.includes('@page { size: 60mm 14mm; margin: 0; }'), 'medida exata');
+  assert(html.includes('@page { size: 30mm 14mm; margin: 0; }'), 'medida exata');
   assert((html.match(/class="etiqueta"/g) || []).length === 2, '2 etiquetas');
-  assert(!html.includes('<b>Anel</b>') && html.includes('&lt;b&gt;Anel&lt;/b&gt;'), 'escape XSS');
+  // o nome NÃO é impresso na etiqueta; mesmo assim nada de HTML cru vazar
+  assert(!html.includes('<b>Anel</b>'), 'escape XSS / nome nao impresso');
   assert(html.includes('R$129,90'), 'preco formatado');
   assert(html.includes('window.print()'), 'autoPrint por padrão');
   assert(!E.getEtiquetasHTML(imgs, { autoPrint: false }).includes('window.print()'), 'autoPrint off');
 });
 
-await check('previewDeEtiquetas mostra todas as linhas', async () => {
-  const imgs = Array.from({ length: 6 }, (_, i) => ({ codigo: 'c' + i, preco: i, barcodeDataUrl: 'd', qrDataUrl: 'd' }));
+// Layout atual (pedido do usuário): sem nome da peça na etiqueta impressa e
+// preço SEM vírgula/ponto como "continuidade" do código do item.
+await check('getEtiquetasHTML: não imprime nome; preço contínuo junto ao código', async () => {
+  const imgs = [{ codigo: '00012345', nome: 'Camiseta Batman', preco: 129.9, barcodeDataUrl: 'data:x', qrDataUrl: 'data:y' }];
+  const html = E.getEtiquetasHTML(imgs);
+  assert(!html.includes('Camiseta Batman'), 'nome nao deve aparecer na etiqueta');
+  assert(html.includes('class="continua">0001234512990<'), 'codigo+preco sem separadores');
+});
+
+await check('previewDeEtiquetas: mesmo layout (sem nome, com continuidade)', async () => {
+  const imgs = Array.from({ length: 6 }, (_, i) => ({ codigo: 'c' + i, nome: 'Nome ' + i, preco: i, barcodeDataUrl: 'd', qrDataUrl: 'd' }));
   const pv = E.previewDeEtiquetas(imgs);
   assert((pv.match(/pv-etiqueta/g) || []).length >= 6, '6 previews');
+  assert(!pv.includes('Nome 0'), 'preview tambem sem nome');
+  assert(pv.includes('c00'), 'continuidade codigo+preco no preview');
 });
 
 await check('gerarZpl: geometria 203dpi, density/speed do painel, comandos presentes', async () => {
   const zpl = E.gerarZpl([{ codigo: '12345670', preco: 59.9 }]);
   assert(zpl.startsWith('^XA') && zpl.trimEnd().endsWith('^XZ'), 'envelope XA..XZ');
-  assert(zpl.includes('^PW480') && zpl.includes('^LL112'), '60x14mm em dots');
+  assert(zpl.includes('^PW240') && zpl.includes('^LL112'), '30x14mm em dots');
   assert(zpl.includes('^SD12') && zpl.includes('^SV4'), 'densidade 12 velocidade 4');
   assert(zpl.includes('^BCN') && zpl.includes('FD12345670'), 'code128 com dados');
   assert(zpl.includes('^BQN'), 'qr presente');
-  assert(zpl.includes('R\\$59,90'.replace('\\', '')) || zpl.includes('R$59,90'), 'preco no ZPL');
+  assert(zpl.includes('R$59,90'), 'preco no ZPL');
+  assert(zpl.includes('FD123456705990'), 'codigo+preco continuo no ZPL');
+});
+
+await check('precoContinuo/codigoMaisPreco: apenas dígitos, sem virgula ou ponto', async () => {
+  assert(E.precoContinuo(129.9) === '12990', `12990 != ${E.precoContinuo(129.9)}`);
+  assert(E.precoContinuo(100) === '10000', 'centavos zerados preservados');
+  assert(E.precoContinuo(0.5) === '50', 'meio real');
+  assert(E.precoContinuo(undefined) === '0', 'vazio -> 0');
+  assert(E.codigoMaisPreco('00012345', 129.9) === '0001234512990', 'concatenacao direta');
+  assert(!/[,\s]/.test(E.codigoMaisPreco('ABC-1', 7)), 'sem separadores nem espacos');
 });
 
 await check('gerarZpl escapa caracteres de controle ^ ~ \\ nos dados', async () => {

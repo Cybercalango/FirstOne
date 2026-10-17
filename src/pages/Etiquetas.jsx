@@ -4,7 +4,7 @@
 // - Seleciona peças (filtro por status/modelo ou lista do PDV)
 // - Cópia por etiqueta: peças com estoque por quantidade geram N etiquetas
 // - Pré-visualização em tela antes de emitir
-// - Impressão pelo navegador (60x14mm exato) OU ZPL nativo p/ térmica
+// - Impressão pelo navegador (30x14mm exato) OU ZPL nativo p/ térmica
 // - Registro de emissões em label_prints (sql/28) + histórico na tela
 // - Leitura por câmera/USB adiciona à seleção (aceita códigos legados via
 //   tabela de aliases do sql/27)
@@ -146,7 +146,7 @@ export default function Etiquetas() {
     <div className="cad-container">
       <BackBar titulo="🏷️ Etiquetas de Preço" />
       <h2>🏷️ Etiquetas de Preço</h2>
-      <p style={{ opacity: .8 }}>Formato 60 x 14 mm · código interno + Code 128 + QR + preço · cópias por estoque.</p>
+      <p style={{ opacity: .8 }}>Formato 30 x 14 mm · código + Code 128 + QR + preço contínuo (sem vírgula/ponto, junto ao código) · sem nome na etiqueta · cópias por estoque.</p>
 
       <div className="cad-block">
         <h3>Adicionar por leitura</h3>
