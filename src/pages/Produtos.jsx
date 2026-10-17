@@ -166,7 +166,7 @@ export default function Produtos() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const [it, setIt] = useState({ name: '', barcode: '', variant_id: '', size: '', quantity: 1, price_cost: '', price_sale: '', status: 'estoque', owner_type: 'loja', owner_id: '', acquisition_date: '', published: false });
+  const [it, setIt] = useState({ name: '', barcode: '', code_origin: 'gerado', variant_id: '', size: '', quantity: 1, price_cost: '', price_sale: '', status: 'estoque', owner_type: 'loja', owner_id: '', acquisition_date: '', published: false });
 
   // Nome enviado ao banco: o digitado, ou derivado do modelo selecionado.
   // (A coluna items.name pode ter NOT NULL no banco legado — nunca envie null.)
@@ -201,32 +201,32 @@ export default function Produtos() {
     const name = nomeParaSalvar();
     if (!name) { setMsg('Informe um nome para a peça ou selecione um modelo.'); return; }
 
-    // 1) Monta o lote de N peças. Cada cópia recebe um código interno
-    //    sequencial (base + sufixo), exceto quando a quantidade é 1
-    //    (usa exatamente o código digitado/gerado).
+    // 1) UM único registro de produto com estoque por QUANTIDADE (sql/27):
+    //    em vez de criar N linhas iguais (base-01..NN), cadastramos 1 linha
+    //    e a entrada inicial com quantity = N. O trigger do banco mantém
+    //    items.quantity sincronizado com os movimentos.
     const baseCode = it.barcode.trim();
-    if (!baseCode && qty > 1) { setMsg('Gere o código interno antes de cadastrar mais de uma peça.'); return; }
-    const rows = [];
-    for (let k = 0; k < qty; k++) {
-      const code = qty === 1 ? baseCode : `${baseCode}-${String(k + 1).padStart(2, '0')}`;
-      rows.push({
-        model_id: selModel,
-        name,
-        barcode: code || null,
-        variant_id: it.variant_id ? Number(it.variant_id) : null,
-        size: it.size || null,
-        price_cost: it.price_cost ? Number(it.price_cost) : 0,
-        price_sale: it.price_sale ? Number(it.price_sale) : 0,
-        status: it.status,
-        owner_type: it.owner_type,
-        owner_id: it.owner_type === 'pessoa' && it.owner_id ? Number(it.owner_id) : null,
-        acquisition_date: it.acquisition_date || null,
-        // Publicação no catálogo da landing (colunas do script 20):
-        published: !!it.published,
-        available: true,
-        category: 'Joias',
-      });
+    if (baseCode.length > 0 && !/^\d{5,13}$/.test(baseCode)) {
+      setMsg('Código deve conter apenas números (5 a 13 dígitos).'); return;
     }
+    const rows = [{
+      model_id: selModel,
+      name,
+      barcode: baseCode || null,
+      quantity: qty,
+      variant_id: it.variant_id ? Number(it.variant_id) : null,
+      size: it.size || null,
+      price_cost: it.price_cost ? Number(it.price_cost) : 0,
+      price_sale: it.price_sale ? Number(it.price_sale) : 0,
+      status: it.status,
+      owner_type: it.owner_type,
+      owner_id: it.owner_type === 'pessoa' && it.owner_id ? Number(it.owner_id) : null,
+      acquisition_date: it.acquisition_date || null,
+      // Publicação no catálogo da landing (colunas do script 20):
+      published: !!it.published,
+      available: true,
+      category: 'Joias',
+    }];
 
     // 2) Insere as peças (retornando os ids gerados).
     const { data: created, error } = await supabase.from('items').insert(rows).select('id');
@@ -239,21 +239,25 @@ export default function Produtos() {
     const movs = (created || []).map((r) => ({
       item_id: r.id,
       type: 'entrada',
-      quantity: 1,
+      quantity: qty,
       reason: 'cadastro',
-      notes: `Cadastro inicial (${qty} pç${qty > 1 ? 's' : ''})`,
+      notes: `Cadastro inicial: ${qty} unidade(s)`,
       ...(userId ? { user_id: userId } : {}),
     }));
     if (movs.length) {
       const { error: errMv } = await supabase.from('stock_movements').insert(movs);
       if (errMv) setMsg(`Peças cadastradas, mas não foi possível registrar a entrada de estoque: ${errMv.message}. Use Movimentações → Entrada.`);
-      else setMsg(`${qty} peça(s) cadastrada(s) com entrada de estoque registrada!`);
+      else setMsg(`Peça cadastrada com ${qty} unidade(s) em estoque!`);
     } else {
       setMsg('Item cadastrado!');
     }
-    setIt({ ...it, name: '', barcode: '', size: '', quantity: 1, price_cost: '', price_sale: '', acquisition_date: '' });
+    setIt({ ...it, name: '', barcode: '', code_origin: 'gerado', size: '', quantity: 1, price_cost: '', price_sale: '', acquisition_date: '' });
     load();
   };
+
+  // Peças cujo código NÃO segue o formato do sistema (ex.: 00010243 ou
+  // 40670211-06 são do sistema; qualquer outro valor é considerado LEGADO).
+  const ehCodigoLegado = (bc) => !!bc && !/^\d{8}(-\d{2})?$/.test(String(bc));
 
   const modelName = (id) => (models.find((x) => x.id === id) || {}).name || '—';
   const typeName = (id) => (types.find((x) => x.id === id) || {}).name || '—';
@@ -349,7 +353,22 @@ export default function Produtos() {
             {models.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
           </select>
           <input placeholder="Nome da peça (opcional — usa o nome do modelo)" value={it.name} onChange={(e) => setIt({ ...it, name: e.target.value })} />
-          <input placeholder="Código interno (8 dígitos)" value={it.barcode} onChange={(e) => setIt({ ...it, barcode: e.target.value })} />
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+            <select title="Origem do código" value={it.code_origin}
+              onChange={(e) => { const v = e.target.value; setIt({ ...it, code_origin: v, barcode: v === 'gerado' ? it.barcode : '' }); }}
+              style={{ width: 130 }}>
+              <option value="gerado">Gerado</option>
+              <option value="legado">Legado</option>
+            </select>
+            <input placeholder={it.code_origin === 'legado' ? 'Código antigo da etiqueta' : 'Código interno (8 dígitos)'}
+              value={it.barcode} onChange={(e) => setIt({ ...it, barcode: e.target.value })} />
+          </div>
+          {it.code_origin === 'legado' && (
+            <p style={{ fontSize: 13, color: '#8E2A6E', margin: '2px 0' }}>
+              * Código legado reaproveitado da etiqueta antiga. Ele será substituído por um código gerado quando o estoque zerar.
+            </p>
+          )}
+{it.code_origin === 'gerado' && (
           <button type="button" className="btn-sec" onClick={() => {
             // Gera código interno: modelo (seq do cadastro) + variação (2 díg.) + grade (1 díg.) + DV
             const mdlIdx = models.findIndex((x) => x.id === selModel);
@@ -370,6 +389,7 @@ export default function Produtos() {
               setMsg(`Código interno gerado: ${code}`);
             } catch (err) { setMsg('Erro ao gerar código: ' + err.message); }
           }}>🔢 Gerar código interno</button>
+          )}
           <select value={it.variant_id} onChange={(e) => setIt({ ...it, variant_id: e.target.value })}>
             <option value="">Variação…</option>
             {variants.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
@@ -461,7 +481,7 @@ export default function Produtos() {
                 <tbody>
                   {resultados.map((i) => (
                     <tr key={i.id}>
-                      <td data-label="Código">{i.barcode || '#' + i.id}</td>
+                      <td data-label="Código">{i.barcode || '#' + i.id}{ehCodigoLegado(i.barcode) ? <span title="Código legado" style={{ color: '#8E2A6E', fontWeight: 700, marginLeft: 2 }}>*</span> : null}</td>
                       <td data-label="Modelo">{(i.models && i.models.name) || modelName(i.model_id)}</td>
                       <td data-label="Variação">{variantName(i.variant_id)}</td>
                       <td data-label="Tam.">{i.size || '—'}</td>
@@ -479,11 +499,11 @@ export default function Produtos() {
         )}
 
         <table className="cad-table">
-          <thead><tr><th>Código</th><th>Foto</th><th>Modelo</th><th>Variação</th><th>Tam.</th><th>Venda</th><th>Status</th><th>Proprietário</th><th>Aquisição</th><th>Site</th></tr></thead>
+          <thead><tr><th>Código</th><th>Foto</th><th>Modelo</th><th>Variação</th><th>Tam.</th><th>Qtd</th><th>Venda</th><th>Status</th><th>Proprietário</th><th>Aquisição</th><th>Site</th></tr></thead>
           <tbody>
             {items.map((i) => (
               <tr key={i.id}>
-                <td data-label="Código">{i.barcode || i.id}</td>
+                <td data-label="Código">{i.barcode || i.id}{ehCodigoLegado(i.barcode) ? <span title="Código legado — substituir por código gerado quando o estoque zerar" style={{ color: '#8E2A6E', fontWeight: 700, marginLeft: 2 }}>*</span> : null}</td>
                 <td data-label="Foto">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     {i.image_url ? (
@@ -507,6 +527,7 @@ export default function Produtos() {
                 <td data-label="Modelo">{(i.models && i.models.name) || modelName(i.model_id)}</td>
                 <td data-label="Variação">{variantName(i.variant_id)}</td>
                 <td data-label="Tam.">{i.size || '—'}</td>
+                <td data-label="Qtd">{Number(i.quantity ?? 1)}</td>
                 <td data-label="Venda">{i.price_sale ? `R$ ${Number(i.price_sale).toFixed(2)}` : '—'}</td>
                 <td data-label="Status">{i.status}</td>
                 <td data-label="Proprietário">{i.owner_type === 'pessoa' ? personName(i.owner_id) : 'Loja'}</td>

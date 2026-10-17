@@ -9,7 +9,7 @@ export default function Movimentacoes() {
   const [people, setPeople] = useState([]);
   const [movements, setMovements] = useState([]);
   const [msg, setMsg] = useState('');
-  const [mv, setMv] = useState({ item_id: '', person_id: '', type: 'saida', notes: '' });
+  const [mv, setMv] = useState({ item_id: '', person_id: '', type: 'saida', quantity: 1, notes: '' });
 
   const load = async () => {
     const [im, pe, mo] = await Promise.all([
@@ -35,7 +35,7 @@ export default function Movimentacoes() {
     // de abas antigas com schema em cache.
     const payload = {
       item_id: Number(mv.item_id), person_id: Number(mv.person_id),
-      type: mv.type, quantity: 1, notes: mv.notes || null,
+      type: mv.type, quantity: Number(mv.quantity || 1), notes: mv.notes || null,
     };
     if (userId) payload.user_id = userId;
     const { error } = await supabase.from('stock_movements').insert([payload]);
@@ -46,7 +46,7 @@ export default function Movimentacoes() {
     });
     if (err2) setMsg('Movimento registrado, mas houve erro ao atualizar o item: ' + err2.message);
     else setMsg(mv.type === 'saida' ? 'Saída registrada! Peça emprestada.' : 'Entrada registrada! Peça devolvida ao estoque.');
-    setMv({ item_id: '', person_id: '', type: mv.type, notes: '' });
+    setMv({ item_id: '', person_id: '', type: mv.type, quantity: 1, notes: '' });
     load();
   };
 
@@ -88,6 +88,10 @@ export default function Movimentacoes() {
             <option value="">Responsável…</option>
             {people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>Qtd.:
+            <input type="number" min="1" max="500" style={{ width: 90 }} value={mv.quantity}
+              onChange={(e) => setMv({ ...mv, quantity: e.target.value })} />
+          </label>
           <input placeholder="Observações" value={mv.notes} onChange={(e) => setMv({ ...mv, notes: e.target.value })} />
           <button type="submit">Registrar</button>
         </form>
