@@ -166,9 +166,12 @@ CREATE TABLE IF NOT EXISTS public.items_barcode_aliases (
 
 -- Agrupa por (modelo, variação, tamanho, status, dono, preço) os itens
 -- com sufixo -NN no barcode e mais de 1 linha; mantém o menor id.
+-- Obs.: "name" não é chave de agrupamento — vem via MIN() para evitar
+-- erro 42803 (column must appear in the GROUP BY clause).
 WITH dup AS (
   SELECT regexp_replace(barcode, '-\d+$', '') AS base,
-         model_id, variant_id, size, status, owner_type, owner_id, price_sale, price_cost, name,
+         model_id, variant_id, size, status, owner_type, owner_id, price_sale, price_cost,
+         MIN(name) AS name,
          MIN(id) AS keep_id,
          COUNT(*) AS n
   FROM public.items
@@ -190,7 +193,8 @@ ON CONFLICT (barcode) DO NOTHING;
 -- Soma as quantidades nos sobreviventes (via quantity atual + unidades legadas).
 WITH dup AS (
   SELECT regexp_replace(barcode, '-\d+$','') AS base,
-         model_id, variant_id, size, status, owner_type, owner_id, price_sale, price_cost, name,
+         model_id, variant_id, size, status, owner_type, owner_id, price_sale, price_cost,
+         MIN(name) AS name,
          MIN(id) AS keep_id, SUM(GREATEST(quantity,1)) AS total_qtd
   FROM public.items
   WHERE barcode ~ '-\d{2}$'
