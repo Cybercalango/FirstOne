@@ -55,11 +55,42 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 -- Identificador do lote agregado (produto), nulo nos movimentos
 -- unitários legados (que apontam para um item específico via item_id
 -- criado por linha).
+-- IMPORTANTE: o cadastro em lote insere N movimentos com MESMO
+-- (item_id, type, reason) e timestamps idênticos (now() é fixo dentro
+-- da transação), então a unicidade real só existe incluindo "id".
+-- Antes de criar a constraint, deduplica linhas exatas que porventura
+-- existam (mantendo o menor id) — sem isso, ADD CONSTRAINT falha com
+-- 23505 em bancos que já têm duplicatas.
+WITH dup AS (
+  SELECT id FROM public.stock_movements
+  WHERE id NOT IN (SELECT MIN(id) FROM public.stock_movements
+                   GROUP BY item_id, COALESCE(type,''), COALESCE(reason,''), created_at)
+)
+DELETE FROM public.stock_movements WHERE id IN (SELECT id FROM dup);
+
 DO $$ BEGIN
   ALTER TABLE public.stock_movements
     ADD CONSTRAINT stock_movements_prod_unique
-    UNIQUE (item_id, type, reason, created_at);
+    UNIQUE (item_id, type, reason, created_at, id);
 EXCEPTION WHEN duplicate_table OR duplicate_object THEN NULL; END $$;
+
+-- Se uma versão anterior criou a constraint SEM "id" (inviável para
+-- lotes), recria-a agora com "id".
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_constraint c
+    JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = ANY (c.conkey)
+    WHERE c.conname = 'stock_movements_prod_unique'
+      AND c.conrelid = 'public.stock_movements'::regclass
+    GROUP BY c.conname
+    HAVING bool_or(a.attname = 'id') = FALSE
+  ) THEN
+    ALTER TABLE public.stock_movements DROP CONSTRAINT stock_movements_prod_unique;
+    ALTER TABLE public.stock_movements
+      ADD CONSTRAINT stock_movements_prod_unique
+      UNIQUE (item_id, type, reason, created_at, id);
+  END IF;
+END $$;
 
 -- Sincroniza os saldos existentes agora. Regra:
 --   * se o último movimento do item é uma ENTRADA AGREGADA (type/quantity,
