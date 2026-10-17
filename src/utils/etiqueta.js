@@ -1,15 +1,14 @@
 // =====================================================================
-// Módulo de impressão de etiquetas 30mm x 14mm (metade do comprimento
-// da pré-visualização antiga de 60mm — padrão atual da empresa)
+// Módulo de impressão de etiquetas 30mm x 14mm
 // ---------------------------------------------------------------------
-// Layout por coluna:
-//   [ código interno 8 dígitos ]      [ QR Code curto ]
-//   [ código de barras Code128  ]     [ preço           ]
-//   [ "R$<preço sem separadores>" sob o barcode, como continuação
-//     do código do item — ex.: código 00012345 e preço R$129,90
-//     aparecem juntos como "0001234512990" ]
-// Obs.: o NOME DA PEÇA não é impresso na etiqueta (decisão do negócio);
-//       ele continua disponível na tela para busca/seleção.
+// Layout MÍNIMO da etiqueta (decisão final do usuário):
+//   [ código contínuo ]        ex.: "406702115990"
+//   [ código de barras Code128 codificando exatamente esse valor ]
+// Nada mais é impresso: sem nome da peça, sem QR code, sem preço
+// separado, sem prefixo "R$". O código contínuo = código do item SEM o
+// sufixo legado "-NN" + preço apenas em dígitos (centavos), ex.:
+//   código "40670211-01", preço 59.90 -> "40670211" + "5990" = "406702115990"
+// Obs.: o NOME DA PEÇA continua disponível na tela para busca/seleção.
 //
 // Recursos:
 //   * Cópia múltipla: peças cadastradas por QUANTIDADE (sql/27) geram
@@ -57,41 +56,19 @@ export function qrTexto(codigo, preco) {
   return `${codigo}|${Number(preco || 0).toFixed(2)}`;
 }
 
-/** Desenha o código de barras Code128 (com texto legível embutido). */
+/**
+ * Desenha o código de barras Code128 SEM texto embutido — o único texto da
+ * etiqueta é o bloco ".cod" (código contínuo) desenhado acima do barcode,
+ * então incluir o texto dentro da imagem duplicaria informação.
+ */
 export function desenharBarcode(canvas, codigo) {
   bwipjs.toCanvas(canvas, {
     bcid: 'code128',
     text: String(codigo),
     scale: 2,
-    height: 8,
-    includetext: true,
-    textxalign: 'center',
-    textsize: 7,
+    height: 10,
+    includetext: false,
   });
-}
-
-/**
- * Desenha o QR Code no canvas.
- * Atenção: no bwip-js (>= v4) o nome do símbolo é 'qrcode' — 'qr' não
- * existe no registro de encoders e derruba a renderização com
- * "bwipp.unknownEncoder: unknown encoder name: qr". Mantida tolerância
- * extra: se por qualquer motivo o QR falhar, a etiqueta ainda é gerada
- * (campo qrDataUrl fica vazio) em vez de abortar pré-visualização/impressão.
- */
-export function desenharQR(canvas, texto) {
-  try {
-    bwipjs.toCanvas(canvas, {
-      bcid: 'qrcode',
-      text: texto,
-      scale: 3,
-      // tamanho pequeno proposital: cabe em ~10mm de altura útil
-      includetext: false,
-    });
-    return true;
-  } catch (e) {
-    console.error('Falha ao desenhar QR:', e);
-    return false;
-  }
 }
 
 /** Limita o nº de cópias ao intervalo seguro [1, MAX_COPIAS]. */
@@ -141,37 +118,44 @@ export function expandirCopias(itens, opts = {}) {
  * Renderiza todas as etiquetas em canvases e devolve a lista com as
  * imagens em dataURL (usado pelo HTML de impressão e pela pré-visualização).
  * linhas: [{ codigo, preco, ... }] (já expandidas por cópias).
+ * O parâmetro qrCanvas é aceito por compatibilidade de chamada mas ignorado:
+ * a etiqueta mínima atual não contém QR.
  */
-export async function renderizarEtiquetas(linhas, barCanvas, qrCanvas) {
+export async function renderizarEtiquetas(linhas, barCanvas, _qrCanvas) {
   const out = [];
   for (const it of linhas) {
-    desenharBarcode(barCanvas, it.codigo);
-    const qrOk = desenharQR(qrCanvas, qrTexto(it.codigo, it.preco));
-    out.push({
-      ...it,
-      barcodeDataUrl: barCanvas.toDataURL('image/png'),
-      // se o QR falhou, não reaproveitar desenho anterior do canvas
-      qrDataUrl: qrOk ? qrCanvas.toDataURL('image/png') : '',
-    });
+    desenharBarcode(barCanvas, textoDaEtiqueta(it));
+    out.push({ ...it, barcodeDataUrl: barCanvas.toDataURL('image/png') });
   }
   return out;
+}
+
+/**
+ * Único conteúdo impresso da etiqueta: o código contínuo
+ * (código do item sem sufixo -NN + preço só em dígitos), ex.:
+ * "40670211" + 59.90 -> "406702115990". Sem nome, sem QR, sem "R$".
+ */
+export function textoDaEtiqueta(it) {
+  return codigoMaisPreco(it.codigo, it.preco);
 }
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 /**
  * Gera o documento HTML de impressão (uma etiqueta por página 30x14mm).
- * imgs: resultado de renderizarEtiquetas (com barcodeDataUrl/qrDataUrl).
+ * imgs: resultado de renderizarEtiquetas (com barcodeDataUrl).
  * opts.autoPrint: abre o diálogo de impressão automaticamente.
- * Layout atual (sem nome da peça): código interno, barcode e preço contínuo
- * "codigopreço" como bloco único sob a imagem do Code128; QR + preço à direita.
+ * Layout MÍNIMO (decisão do usuário): apenas o texto do código contínuo
+ * (ex.: "406702115990") e, abaixo, o código de barras Code128 codificando
+ * exatamente esse mesmo valor. Nada mais é impresso (sem nome, sem QR,
+ * sem preço separado).
  */
 export function getEtiquetasHTML(imgs, opts = {}) {
   const { autoPrint = true } = opts;
   const etiquetas = imgs.map((it) => `
     <div class="etiqueta">
-      <div class="cod">${esc(codigoMaisPreco(it.codigo, it.preco))}</div>
-      <img class="bar" src="${it.barcodeDataUrl}" alt="${esc(it.codigo)}" />
+      <div class="cod">${esc(textoDaEtiqueta(it))}</div>
+      <img class="bar" src="${it.barcodeDataUrl}" alt="${esc(textoDaEtiqueta(it))}" />
     </div>`).join('\n');
 
   return `<!doctype html>
@@ -187,9 +171,9 @@ export function getEtiquetasHTML(imgs, opts = {}) {
     overflow: hidden; page-break-after: always;
     break-after: page; position: relative;
   }
-  /* único texto da etiqueta: código do item + preço contínuo (sem sufixo -NN) */
-  .cod { font-size: 2.4mm; font-weight: bold; letter-spacing: .1mm; line-height: 2.6mm; white-space: nowrap; }
-  .bar { width: 92%; height: 7mm; object-fit: contain; image-rendering: pixelated; margin-top:.6mm; }
+  /* único texto da etiqueta: código contínuo (código+preço, sem sufixo -NN) */
+  .cod { font-size: 2.6mm; font-weight: bold; letter-spacing: .1mm; line-height: 2.8mm; white-space: nowrap; }
+  .bar { width: 92%; height: 7.5mm; object-fit: contain; image-rendering: pixelated; margin-top:.5mm; }
 </style></head>
 <body>${etiquetas}
 ${autoPrint ? '<script>window.onload=function(){setTimeout(function(){window.print()},250)};</script>' : ''}
@@ -197,15 +181,14 @@ ${autoPrint ? '<script>window.onload=function(){setTimeout(function(){window.pri
 }
 
 /**
- * Pré-visualização em tela: mesmo layout da impressão (30x14mm), mas dentro
- * de um container do app (não dispara window.print). Retorna HTML pronto para
- * ser injetado via dangerouslySetInnerHTML ou colado num preview.
- * Sem nome da peça; preço contínuo ("código+preço") abaixo do barcode.
+ * Pré-visualização em tela: MESMO layout mínimo da impressão (30x14mm),
+ * mas dentro de um container do app (não dispara window.print).
+ * Apenas o código contínuo + barcode — sem nome, sem QR, sem preço extra.
  */
 export function previewDeEtiquetas(imgs) {
   const etiquetas = imgs.map((it, idx) => `
     <div class="pv-etiqueta" title="Etiqueta ${idx + 1}">
-      <div class="pv-cod">${esc(codigoMaisPreco(it.codigo, it.preco))}</div>
+      <div class="pv-cod">${esc(textoDaEtiqueta(it))}</div>
       <img class="pv-bar" src="${it.barcodeDataUrl}" alt="" />
     </div>`).join('\n');
   // proporção exata da etiqueta física 30x14mm -> 120x56px
@@ -213,7 +196,7 @@ export function previewDeEtiquetas(imgs) {
     .pv-wrap{display:flex;flex-wrap:wrap;gap:6px;padding:6px;background:#eee;border-radius:8px;}
     .pv-etiqueta{width:120px;height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;background:#fff;border:1px dashed #999;box-sizing:border-box;font-family:Arial,sans-serif;}
     .pv-cod{font-size:8px;font-weight:bold;letter-spacing:.3px;line-height:9px;white-space:nowrap;}
-    .pv-bar{width:92%;height:22px;object-fit:contain;image-rendering:pixelated;margin-top:2px;}
+    .pv-bar{width:92%;height:26px;object-fit:contain;image-rendering:pixelated;margin-top:2px;}
   </style><div class="pv-wrap">${etiquetas}</div>`;
 }
 
@@ -230,7 +213,8 @@ function zplTexto(s) {
  * Monta o comando ZPL para uma folha de etiquetas 30x14mm.
  * Configuração padrão do painel citada no projeto: density 12, speed 4.
  * linhas: [{ codigo, preco }] (já expandidas por cópias).
- * Sem nome da peça; preço SEM separadores colado ao código ("continuidade").
+ * Layout MÍNIMO idêntico ao HTML: texto do código contínuo + Code128 que
+ * codifica esse mesmo valor. Sem nome, sem QR, sem preço separado.
  */
 export function gerarZpl(linhas, opts = {}) {
   const dpi = opts.dpi || DPI_PADRAO;
@@ -240,11 +224,14 @@ export function gerarZpl(linhas, opts = {}) {
   const density = opts.density ?? 12;
   const speed = opts.speed ?? 4;
   const codX = 6, codY = 4;
-  const barH = Math.round(7 * dpmm);          // 56 dots
+  const barH = Math.round(7.5 * dpmm);        // 60 dots
 
-  const blocos = linhas.map((it) => `
-^FO${codX},${codY}^A0N,${Math.round(2.4 * dpmm)},${Math.round(2.4 * dpmm)}^FD${zplTexto(codigoMaisPreco(it.codigo, it.preco))}^FS
-^FO${Math.round(W * 0.04)},${codY + Math.round(3.4 * dpmm)}^BY2,3,${barH}^BCN,${barH},N,N,N^FD${zplTexto(limparSufixoLegado(it.codigo))}^FS`).join('\n');
+  const blocos = linhas.map((it) => {
+    const txt = zplTexto(textoDaEtiqueta(it));
+    return `
+^FO${codX},${codY}^A0N,${Math.round(2.6 * dpmm)},${Math.round(2.6 * dpmm)}^FD${txt}^FS
+^FO${Math.round(W * 0.04)},${codY + Math.round(3.6 * dpmm)}^BY2,3,${barH}^BCN,${barH},N,N,N^FD${txt}^FS`;
+  }).join('\n');
 
   return `^XA
 ^CI28

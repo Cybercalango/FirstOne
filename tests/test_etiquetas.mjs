@@ -155,18 +155,30 @@ await check('gerarZpl escapa caracteres de controle ^ ~ \\ nos dados', async () 
   assert(zpl.includes('FD12 3 4 5'), 'chars substituídos por espaço');
 });
 
-// Regression: bwip-js não possui encoder "qr" — o nome correto é "qrcode".
-// Usar "qr" derrubava pré-visualização/impressão com
-// "bwipp.unknownEncoder: unknown encoder name: qr".
-await check('desenharQR usa bcid "qrcode" (não "qr") e tolera falhas', async () => {
-  let opts = null, throwNext = false;
-  E.bwipjs.toCanvas = (_c, o) => { if (throwNext) throw new Error('boom'); opts = o; };
-  const ok = E.desenharQR({}, '12345678|99.90');
-  assert(ok === true, 'deve retornar true quando desenha');
-  assert(opts && opts.bcid === 'qrcode', `bcid deve ser qrcode, veio ${opts && opts.bcid}`);
-  throwNext = true;
-  const fail = E.desenharQR({}, 'x');
-  assert(fail === false, 'falha de desenho retorna false sem lançar');
+// Regression: a etiqueta mínima NÃO desenha mais QR — desenharQR foi
+// removido do módulo. O barcode (Code128) deve codificar o MESMO texto do
+// bloco ".cod" (código contínuo), sem texto embutido duplicado na imagem.
+await check('desenharBarcode: bcid code128, includetext false, sem QR no módulo', async () => {
+  assert(E.desenharQR === undefined, 'desenharQR removido do modulo');
+  let opts = null;
+  E.bwipjs.toCanvas = (_c, o) => { opts = o; };
+  E.desenharBarcode({}, '406702115990');
+  assert(opts && opts.bcid === 'code128', `bcid code128, veio ${opts && opts.bcid}`);
+  assert(opts.includetext === false, 'sem texto embutido no barcode');
+  assert(opts.text === '406702115990', 'barcode com o codigo continuo');
+});
+
+await check('renderizarEtiquetas: barcode recebe o código contínuo (textoDaEtiqueta)', async () => {
+  const vistos = [];
+  E.bwipjs.toCanvas = (_c, o) => { vistos.push(o.text); };
+  const canvasFake = { toDataURL: () => 'data:img' };
+  const imgs = await E.renderizarEtiquetas(
+    [{ codigo: '40670211-01'.replace('-01',''), preco: 59.9 }, { codigo: '00012345', preco: 129.9 }],
+    canvasFake,
+  );
+  assert(imgs.length === 2, '2 etiquetas');
+  assert(vistos[0] === '406702115990' && vistos[1] === '0001234512990', `barcode = continuidade, veio ${vistos}`);
+  assert(!('qrDataUrl' in imgs[0]), 'sem campo qrDataUrl');
 });
 
 console.log(failures ? `\n${failures} teste(s) falharam` : '\nTodos os testes passaram');
