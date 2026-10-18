@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import BackBar from '../components/BackBar';
 import { supabase } from '../supabaseClient';
+import { setEmpresaCache } from '../utils/empresa';
 
 // Cadastros base relativos aos produtos: Variantes, Tipos, Grades (com tamanhos) e Modelos.
 // Obs.: o cadastro de Pessoas foi promovido a card próprio no menu principal (/pessoas).
@@ -9,7 +10,86 @@ const tabs = [
   { id: 'types', label: '📿 Tipos' },
   { id: 'grids', label: '📏 Grades de Tamanho' },
   { id: 'models', label: '💍 Modelos de Joia' },
+  { id: 'empresa', label: '🏪 Empresa' },
 ];
+
+// ---------- Empresa (dados usados nas impressões — romaneio timbrado) ----------
+// Tabela company_settings (linha única id=1, sql/29). Upload do logo no bucket
+// público 'catalogo' (mesma policy por usuário dos produtos); se não houver
+// upload novo, o app usa /logo-flor-da-pele.png embutido no build.
+function Empresa() {
+  const CAMPOS = [
+    ['nome', 'Nome fantasia *'], ['slogan', 'Slogan'],
+    ['telefone', 'Telefone'], ['whatsapp', 'WhatsApp'],
+    ['email', 'E-mail'], ['site', 'Site'], ['instagram', '@Instagram'],
+    ['endereco', 'Endereço (rua, nº)'], ['cidade_uf', 'Cidade/UF'], ['cep', 'CEP'],
+    ['cnpj', 'CNPJ'],
+  ];
+  const vazio = { nome: '', slogan: '', telefone: '', whatsapp: '', email: '', site: '', instagram: '', endereco: '', cidade_uf: '', cep: '', cnpj: '', logo_url: '' };
+  const [f, setF] = useState(vazio);
+  const [temLinha, setTemLinha] = useState(false);
+  const [msg, setMsg] = useState('');
+  const [enviandoLogo, setEnviandoLogo] = useState(false);
+
+  const load = async () => {
+    const { data, error } = await supabase.from('company_settings').select('*').eq('id', 1).maybeSingle();
+    if (error) { setMsg('Erro ao carregar: ' + error.message + ' — execute sql/29_config_empresa.sql no Supabase.'); return; }
+    if (data) { setTemLinha(true); setF({ ...vazio, ...data }); }
+  };
+  useEffect(() => { load(); }, []);
+
+  const salvar = async (e) => {
+    e.preventDefault();
+    if (!f.nome.trim()) { setMsg('Informe o nome da empresa.'); return; }
+    const payload = { id: 1, atualizado_em: new Date().toISOString(), ...Object.fromEntries(Object.entries(f).map(([k, val]) => [k, String(val ?? '').trim() || null])) };
+    payload.nome = f.nome.trim();
+    let res;
+    if (temLinha) res = await supabase.from('company_settings').update(payload).eq('id', 1);
+    else res = await supabase.from('company_settings').upsert(payload);
+    if (res.error) { setMsg('Erro ao salvar: ' + res.error.message); return; }
+    setTemLinha(true);
+    setEmpresaCache(payload); // vale para romaneios sem precisar recarregar
+    setMsg('✅ Dados da empresa salvos. As próximas impressões já usam este cabeçalho/rodapé.');
+  };
+
+  const enviarLogo = async (file) => {
+    if (!file) return;
+    setEnviandoLogo(true);
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const uid = sess?.session?.user?.id;
+      if (!uid) throw new Error('Sessão não encontrada — faça login novamente.');
+      const path = `${uid}/empresa-logo-${Date.now()}.png`;
+      const { error: errUp } = await supabase.storage.from('catalogo').upload(path, file, { contentType: file.type || 'image/png', upsert: true });
+      if (errUp) throw errUp;
+      const { data: pub } = await supabase.storage.from('catalogo').getPublicUrl(path);
+      setF((p) => ({ ...p, logo_url: pub.publicUrl }));
+      setMsg('Logo anexado — clique em Salvar para aplicar.');
+    } catch (e) {
+      setMsg('Não foi possível enviar o logo (' + (e?.message || 'sem conexão com o storage') + '). Sem upload, a impressão usa o logo padrão do sistema.');
+    } finally { setEnviandoLogo(false); }
+  };
+
+  return (
+    <div className="cad-block">
+      <h3>Dados da empresa (usados nas impressões)</h3>
+      <form onSubmit={salvar} className="cad-form people-form">
+        {CAMPOS.map(([k, ph]) => (
+          <label key={k}>{ph}
+            <input value={f[k] || ''} onChange={(e) => setF({ ...f, [k]: e.target.value })} />
+          </label>
+        ))}
+        <label>Logo (PNG/JPG, opcional)
+          <input type="file" accept="image/*" disabled={enviandoLogo}
+            onChange={(e) => enviarLogo(e.target.files?.[0])} />
+        </label>
+        {f.logo_url && <img src={f.logo_url} alt="logo atual" style={{ maxHeight: 64, maxWidth: 200 }} />}
+        <button type="submit">{enviandoLogo ? 'Enviando…' : 'Salvar dados da empresa'}</button>
+      </form>
+      {msg && <p className="cad-msg">{msg}</p>}
+    </div>
+  );
+}
 
 function SimpleList({ table, labelSingular }) {
   const [rows, setRows] = useState([]);
@@ -213,6 +293,7 @@ export default function Cadastros() {
       {tab === 'types' && <SimpleList table="types" labelSingular="tipo" />}
       {tab === 'grids' && <Grids />}
       {tab === 'models' && <Models />}
+      {tab === 'empresa' && <Empresa />}
     </div>
   );
 }

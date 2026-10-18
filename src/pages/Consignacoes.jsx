@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import BackBar from '../components/BackBar';
 import LeitorCodigo from '../components/LeitorCodigo';
 import { supabase } from '../supabaseClient';
+import { getEmpresa, htmlPapelTimbrado, logoParaDataUrl, escHtml } from '../utils/empresa';
 
 // Consignação: remessa formal de peças a um parceiro, com prazo, devolução e acerto (cobrança).
 // Layout inspirado na "Pesquisa de consignações" do sistema anterior:
@@ -200,45 +201,31 @@ export default function Consignacoes() {
     else { setMsg(data || 'Consignação excluída.'); if (selC === c.id) setSelC(null); load(); }
   };
 
-  // Romaneio: janela de impressão da lista de peças — estilo da landing page
-  // (Magenta Vinho #8E2A6E, Cormorant Garamond + DM Sans, bordas suaves)
-  const printRomaneio = (c) => {
+  // Romaneio: papel timbrado A4 (identidade Flor da Pele — cabeçalho com
+  // logo, faixas magenta, rodapé com endereço/contato/CNPJ; dados vêm de
+  // company_settings via Cadastros Base → Empresa). Classes doc-* definidas
+  // em src/utils/empresa.js (htmlPapelTimbrado).
+  const printRomaneio = async (c) => {
+    const empresa = await getEmpresa();
     const list = cItems.filter((x) => x.consignment_id === c.id);
-    const linhas = list.map((x) => { const it = itemById(x.item_id); const st = x.sold ? 'Vendida' : x.returned ? 'Devolvida' : 'Em poder'; return `<tr><td>${it?.barcode || x.item_id}${it && ehCodigoLegado(it.barcode) ? '*' : ''}</td><td>${modelName(it)}</td><td>R$ ${Number(it?.price_sale || 0).toFixed(2)}</td><td class="st">${st}</td></tr>`; }).join('');
-    const w = window.open('', '_blank', 'width=700,height=600');
-    w.document.write(`<html><head><title>Romaneio Consignação #${c.id}</title>
-      <link rel="preconnect" href="https://fonts.googleapis.com">
-      <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-      <style>
-        :root { --primary:#8E2A6E; --foreground:#4a3145; --muted-foreground:#8a7484; --border:#e6d9e2; --accent:#f6ecf3; }
-        * { box-sizing: border-box; }
-        body { font-family:'DM Sans',sans-serif; color:var(--foreground); background:#fff; margin:0; padding:32px 36px; font-size:13px; -webkit-font-smoothing:antialiased; }
-        .eyebrow { color:var(--primary); font-size:10px; font-weight:600; letter-spacing:2.2px; text-transform:uppercase; display:flex; align-items:center; gap:10px; }
-        .eyebrow::before { content:''; width:23px; height:1px; background:var(--primary); }
-        h3.doc-title { font-family:'Cormorant Garamond',serif; font-weight:500; font-size:34px; line-height:1.05; margin:8px 0 4px; color:var(--foreground); }
-        .meta { color:var(--muted-foreground); font-size:12px; margin:0 0 22px; }
-        .meta b { color:var(--foreground); font-weight:500; }
-        table { border-collapse:collapse; width:100%; }
-        th { text-align:left; font-size:10px; letter-spacing:1.6px; text-transform:uppercase; color:var(--primary); border-bottom:1px solid var(--primary); padding:8px 10px; font-weight:600; }
-        td { border-bottom:1px solid var(--border); padding:9px 10px; font-size:13px; }
-        tbody tr:nth-child(even) td { background:var(--accent); }
-        td.st { color:var(--muted-foreground); font-size:12px; }
-        tfoot td { border:none; padding-top:16px; font-size:13px; }
-        .total { color:var(--primary); font-weight:600; }
-        .assinaturas { display:grid; grid-template-columns:1fr 1fr; gap:48px; margin-top:64px; }
-        .assinaturas div { border-top:1px solid var(--border); padding-top:8px; text-align:center; font-size:11px; color:var(--muted-foreground); letter-spacing:.4px; }
-        @media print { body { padding:0; } }
-      </style></head><body>
-      <div class="eyebrow">MAGENTA VINHO</div>
-      <h3 class="doc-title">Romaneio — Consignação #${c.id}</h3>
-      <p class="meta"><b>Parceiro:</b> ${personName(c.consignor_id)} &nbsp;·&nbsp; <b>Início:</b> ${c.start_date} &nbsp;·&nbsp; <b>Prazo:</b> ${c.due_date || '—'} &nbsp;·&nbsp; <b>Status:</b> ${c.status}</p>
-      <table><thead><tr><th>Código</th><th>Modelo</th><th>Valor</th><th>Situação</th></tr></thead><tbody>${linhas}</tbody>
-        <tfoot><tr><td colspan="4"><span class="total">Total em poder: R$ ${cValor(c.id).toFixed(2)}</span> (${cPend(c.id).length} peça(s))</td></tr></tfoot>
-      </table>
-      <div class="assinaturas"><div>Assinatura — Loja</div><div>Assinatura — Parceiro</div></div>
-      <p style="font-size:10px;color:#6b5a66;margin-top:8px">* Código legado (etiqueta antiga) — será substituído por código do sistema quando o estoque zerar.</p>
-      <script>window.print()</script></body></html>`);
+    const linhas = list.map((x) => { const it = itemById(x.item_id); const st = x.sold ? 'Vendida' : x.returned ? 'Devolvida' : 'Em poder'; return `<tr><td>${it?.barcode || x.item_id}${it && ehCodigoLegado(it.barcode) ? '*' : ''}</td><td>${modelName(it)}</td><td>R$ ${Number(it?.price_sale || 0).toFixed(2)}</td><td>${st}</td></tr>`; }).join('');
+    const corpo = `
+      <p class="doc-eyebrow">${escHtml(empresa.nome)}</p>
+      <h1 class="doc-titulo">Romaneio — Consignação #${c.id}</h1>
+      <p class="doc-meta"><strong>Parceiro:</strong> ${escHtml(personName(c.consignor_id))} &nbsp;·&nbsp; <strong>Início:</strong> ${c.start_date} &nbsp;·&nbsp; <strong>Prazo:</strong> ${c.due_date || '—'} &nbsp;·&nbsp; <strong>Status:</strong> ${c.status}</p>
+      <table class="doc-tabela"><thead><tr><th>Código</th><th>Modelo</th><th>Valor</th><th>Situação</th></tr></thead><tbody>${linhas}</tbody></table>
+      <p class="doc-destaque">Total em poder: <strong>R$ ${cValor(c.id).toFixed(2)}</strong> (${cPend(c.id).length} peça(s))</p>
+      <div class="doc-assinaturas"><div class="doc-assinatura">Assinatura — Loja</div><div class="doc-assinatura">Assinatura — Parceiro</div></div>
+      <p class="doc-nota">* Código legado (etiqueta antiga) — será substituído por código do sistema quando o estoque zerar.</p>`;
+    let logoSrc = '';
+    try { logoSrc = await logoParaDataUrl(empresa.logo_url || '/logo-flor-da-pele.png'); } catch { logoSrc = ''; }
+    const html = htmlPapelTimbrado({ corpo, titulo: `Romaneio — Consignação #${c.id}`, empresa, logoSrc });
+    const w = window.open('', '_blank', 'width=820,height=700');
+    if (!w) { setMsg('O navegador bloqueou a janela de impressão. Permita pop-ups para este site.'); return; }
+    w.document.write(html);
     w.document.close();
+    // dá tempo das fontes/logo carregarem antes de abrir o diálogo
+    w.onload = () => setTimeout(() => { try { w.focus(); w.print(); } catch { /* usuário pode imprimir manualmente */ } }, 350);
   };
 
   const activeItems = items.filter((i) => i.status === 'estoque');
