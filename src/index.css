@@ -95,6 +95,10 @@ html, body { background: var(--bg); color: var(--text); }
 
 img {
   max-width: 100%;
+  /* height:auto NAO eh global: componentes (ex.: .product-dialog > img no
+     catalogo da landing) definem altura propria com object-fit. */
+}
+img.responsive {
   height: auto;
   display: block;
   object-fit: cover;
@@ -105,10 +109,9 @@ button, a, input, textarea, select {
   touch-action: manipulation;
 }
 
-:focus {
+:focus-visible {
   outline: 3px solid rgba(142, 42, 110, 0.18);
   outline-offset: 2px;
-  box-shadow: none;
 }
 
 /* Global button baseline — uses theme tokens; more specific selectors can override per-context */
@@ -133,12 +136,18 @@ input, select, textarea {
   color: #1c1a20 !important;
   border: 1px solid #ccc;
   min-height: 2.75rem;
-  font-size: 1rem;
+  font-size: 16px; /* >=16px evita zoom automatico do iOS ao focar */
   padding: 0.5rem 0.6rem;
   border-radius: 0.375rem;
   box-sizing: border-box;
-  -webkit-user-modify: read-write-plaintext-only;
   overflow-wrap: anywhere;
+}
+/* Campos com estilo proprio (landing) nao herdam o bloco acima */
+.landing-root input, .landing-root select, .landing-root textarea {
+  min-height: unset;
+  font-size: inherit;
+  padding: unset;
+  border-radius: unset;
 }
 input::placeholder, textarea::placeholder { color: #7a7580; }
 label { color: #1c1a20; }
