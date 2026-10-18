@@ -230,11 +230,28 @@
  .hero-cta { margin-top: 24px; height: 48px; width: 100%; max-width: none; }
  .collection-stamp { display: none; }
 
- /* CATÁLOGO: 2 colunas com fotos quadradas (o crop 1/1.08 ficava estranho no celular) */
- .product-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 22px 12px; }
- .product-photo { aspect-ratio: 1 / 1; }
- .product-info button { min-height: 40px; }
- .product-heart { right: 4px; top: 4px; width: 44px; height: 44px; min-width: 44px; min-height: 44px; }
+ /* CATEGORIAS (Anel, Brincos, Colares…): sem scroll lateral rígido — os botões
+    quebram linha e preenchem a tela em grade fluida (wrap). Desktop intacto. */
+ .category-tabs { display: flex; flex-wrap: wrap; gap: 8px; overflow-x: visible; padding-bottom: 0; }
+ .category-tab { flex: 1 1 auto; min-width: max-content; min-height: 44px; padding-inline: 14px; font-size: 13px; }
+
+ /* CATÁLOGO: cards horizontais em coluna única — foto à esquerda (não cortada),
+    nome/preço/ações à direita. Alvos de toque ≥44px. */
+ .product-grid { grid-template-columns: minmax(0,1fr); gap: 16px; }
+ .landing-root .product { display: grid; grid-template-columns: 116px minmax(0,1fr); gap: 14px; align-items: stretch; }
+ .product-photo { aspect-ratio: 1 / 1; height: 100%; min-height: 116px; }
+ .product-photo img { object-fit: cover; }
+ .product-info { padding-top: 2px; display: flex; flex-direction: column; gap: 2px; }
+ .product-info h3 { font-size: 15px; line-height: 1.3; }
+ .product-info button { min-height: 44px; width: fit-content; }
+ .product-buy-link { margin-top: 2px; }
+ .product-heart { right: 2px; top: 2px; width: 44px; height: 44px; min-width: 44px; min-height: 44px; }
+
+ /* VALUES-STRIP: carrossel horizontal com "scroll-snap" no celular
+    (em telas ≥700px continua sendo a faixa de 3 colunas do desktop) */
+ .values-strip { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; padding: 14px 20px; gap: 10px; -webkit-overflow-scrolling: touch; }
+ .values-strip::-webkit-scrollbar { display: none; }
+ .values-strip > div { flex: 0 0 calc(50% - 5px); scroll-snap-align: center; border: 1px solid var(--border); border-radius: 6px; padding: 12px 8px; min-height: 72px; }
 
  /* DIÁLOGOS: painel quase full-screen no celular, com rolagem interna suave */
  .landing-root .dialog-content { max-width: none; width: calc(100% - 20px); padding: 18px; }
@@ -244,10 +261,17 @@
  .site-footer { display: block; text-align: center; padding-block: 30px; }
  .site-footer a { display: inline-block; padding: 10px 14px; }
 }
-/* Telas muito pequenas (≤380px): uma coluna no catálogo para não espremer preço/nome */
+/* Telas pequenas (≤380px): card empilhado (foto grande em cima, info abaixo)
+   porque 116px de foto + texto ficaria apertado em 320-360px de largura */
 @media (max-width: 380px) {
- .product-grid { grid-template-columns: 1fr; gap: 26px; }
- .product-photo { aspect-ratio: 4 / 5; max-width: 78%; margin-inline: auto; }
+ .landing-root .product { grid-template-columns: minmax(0,1fr); }
+ .product-photo { aspect-ratio: 4 / 5; max-width: none; height: auto; }
+}
+/* Tablets pequenos (521–700px): duas colunas de cards verticais */
+@media (min-width: 521px) and (max-width: 700px) {
+ .product-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 20px 14px; }
+ .landing-root .product { display: block; }
+ .product-photo { aspect-ratio: 1 / 1; height: auto; min-height: 0; }
 }
 /* Hover apenas onde existe mouse — evita "grudar" estado hover ao tocar no celular */
 @media (hover: none) { .product-photo:hover img { transform: none; } }
