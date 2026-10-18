@@ -98,7 +98,7 @@ export function contatosEmpresa(e) {
 // régua de identidade, rodapé com endereço/contato/CNPJ). Classes
 // "doc-*" permitem montar o corpo do documento (romaneio etc.).
 // `logoSrc`: URL do logo (dataURL ou http) — se vazio usa apenas o nome.
-export function htmlPapelTimbrado({ corpo, titulo, empresa, logoSrc }) {
+export function htmlPapelTimbrado({ corpo, titulo, empresa, logoSrc, marcaDagua = '/flor-mark.png' }) {
   const e = { ...EMPRESA_PADRAO, ...(empresa || {}) };
   const contatos = contatosEmpresa(e);
   const logoHtml = logoSrc
@@ -129,6 +129,8 @@ export function htmlPapelTimbrado({ corpo, titulo, empresa, logoSrc }) {
   .contatos { list-style:none; margin:0; padding:0; font-size:10.5px; color:var(--suave); line-height:1.55; }
   .regua { height:2px; margin:0 16mm; background:linear-gradient(90deg,var(--magenta),#d9a8c6 60%,transparent); flex:none; }
   .area-livre { flex:1; padding:10mm 16mm; position:relative; }
+  .marca-dagua { position:absolute; top:50%; left:50%; transform:translate(-50%,-52%);
+    width:120mm; height:120mm; object-fit:contain; opacity:.05; pointer-events:none; }
   .rodape { flex:none; border-top:1px solid var(--fio); margin:0 16mm; padding:6mm 0 4mm; }
   .rodape-grid { display:grid; grid-template-columns:1.2fr 1.4fr 1.4fr; gap:12px; align-items:start; }
   .marca-nome { display:block; font-family:'Oswald','Arial Narrow',sans-serif; font-weight:500;
@@ -169,7 +171,7 @@ export function htmlPapelTimbrado({ corpo, titulo, empresa, logoSrc }) {
     </div>
   </header>
   <div class="regua" aria-hidden="true"></div>
-  <main class="area-livre">${corpo || ''}</main>
+  <main class="area-livre"><img class="marca-dagua" src="${esc(marcaDagua)}" alt="">${corpo || ''}</main>
   <footer class="rodape">
     <div class="rodape-grid">
       <div><span class="marca-nome">${esc(e.nome)}</span><span class="marca-sub">${esc(e.slogan)}</span></div>
