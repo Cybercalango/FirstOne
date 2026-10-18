@@ -60,8 +60,20 @@ t('Cadastros Base tem aba Empresa com CRUD de company_settings', () => {
 
 t('timbrado tem marca d\'água flor-mark.png na área livre (5% opacidade)', () => {
   assert.ok(src.includes("marcaDagua = '/flor-mark.png'"), 'parâmetro marcaDagua com default /flor-mark.png');
-  assert.ok(src.includes('<img class="marca-dagua" src="${esc(marcaDagua)}"'), 'img renderizada dentro de .area-livre');
+  assert.ok(src.includes('<img class="marca-dagua" src="${esc(marcaUrl || marcaDagua)}"'), 'img renderizada dentro de .area-livre');
   assert.match(src, /\.marca-dagua \{[^}]*opacity:\.05/);
+});
+
+t('marca d\'água vira dataURL antes da impressão (janela about:blank não resolve /x.png)', () => {
+  assert.ok(src.includes('export async function marcaDaguaDataUrl'), 'função que baixa e embute a marca');
+  assert.ok(src.includes('export function urlAbsoluta'), 'resolve caminho relativo vs BASE_URL (/FirstOne/)');
+  assert.ok(!src.includes("window.location.origin + '/FirstOne'"), 'hardcode /FirstOne removido');
+  assert.ok(cons.includes('await marcaDaguaDataUrl') && cons.includes('logoSrc, marcaDagua'), 'romaneio passa dataURL ao timbrado');
+});
+
+t('romaneio sem doc-eyebrow redundante (nome já está no cabeçalho do timbrado)', () => {
+  assert.ok(!cons.includes('doc-eyebrow'), 'eyebrow removido do corpo do romaneio');
+  assert.ok(src.includes('.doc-eyebrow'), 'classe continua disponível p/ outros docs');
 });
 
 t('sql/29 cria company_settings idempotente com defaults Flor da Pele', () => {
