@@ -58,6 +58,12 @@ t('Cadastros Base tem aba Empresa com CRUD de company_settings', () => {
   assert.ok(cad.includes('setEmpresaCache'), 'salvar atualiza o cache de impressão');
 });
 
+t('timbrado tem marca d\'água flor-mark.png na área livre (5% opacidade)', () => {
+  assert.ok(src.includes("marcaDagua = '/flor-mark.png'"), 'parâmetro marcaDagua com default /flor-mark.png');
+  assert.ok(src.includes('<img class="marca-dagua" src="${esc(marcaDagua)}"'), 'img renderizada dentro de .area-livre');
+  assert.match(src, /\.marca-dagua \{[^}]*opacity:\.05/);
+});
+
 t('sql/29 cria company_settings idempotente com defaults Flor da Pele', () => {
   assert.match(sql29, /CREATE TABLE IF NOT EXISTS public\.company_settings/);
   assert.match(sql29, /ON CONFLICT \(id\) DO NOTHING/);
