@@ -68,10 +68,31 @@ export async function logoParaDataUrl(url) {
       return url; // fallback: deixa o navegador tentar carregar direto
     }
   }
-  if (alvo.startsWith('/')) alvo = window.location.origin + '/FirstOne' + alvo;
+  if (alvo.startsWith('/')) alvo = urlAbsoluta(alvo);
   const r = await fetch(alvo);
   if (!r.ok) throw new Error('logo não encontrado');
   return await blobParaDataUrl(await r.blob());
+}
+
+// Resolve caminhos absolutos ("/flor-mark.png") relativos ao BASE_URL do
+// build (no GitHub Pages o site vive em /FirstOne/, então "/x.png" puro
+// resultaria em 404). URLs http(s)/data passam direto.
+export function urlAbsoluta(p) {
+  if (/^(https?:|data:|blob:)/i.test(p)) return p;
+  const base = (import.meta.env && import.meta.env.BASE_URL) || '/';
+  return p.startsWith('/') ? base.replace(/\/$/, '') + p : base + p;
+}
+
+// Marca d'água como dataURL (funciona na janela about:blank da impressão,
+// cuja URL base é "about:" — caminho relativo puro não resolveria).
+export async function marcaDaguaDataUrl(caminho = '/flor-mark.png') {
+  try {
+    const r = await fetch(urlAbsoluta(caminho));
+    if (!r.ok) return '';
+    return await blobParaDataUrl(await r.blob());
+  } catch {
+    return ''; // sem rede/arquivo: timbrado segue sem a marca (não quebra)
+  }
 }
 
 async function blobParaDataUrl(blob) {
@@ -101,6 +122,16 @@ export function contatosEmpresa(e) {
 export function htmlPapelTimbrado({ corpo, titulo, empresa, logoSrc, marcaDagua = '/flor-mark.png' }) {
   const e = { ...EMPRESA_PADRAO, ...(empresa || {}) };
   const contatos = contatosEmpresa(e);
+  // Marca d'água: só renderiza <img> se houver fonte (dataURL ou URL
+  // absoluta). Em janela about:blank da impressão, caminho relativo
+  // "/flor-mark.png" não resolve — quem chama deve passar dataURL via
+  // marcaDaguaDataUrl(); aqui o fallback é a URL absoluta do próprio site.
+  const marcaUrl = marcaDagua && /^(https?:|data:|blob:)/i.test(marcaDagua)
+    ? marcaDagua
+    : (typeof window !== 'undefined' ? window.location.origin + marcaDagua : '');
+  const marcaHtml = marcaDagua
+    ? `<img class="marca-dagua" src="${esc(marcaUrl || marcaDagua)}" alt="">`
+    : '';
   const logoHtml = logoSrc
     ? `<img class="logo" src="${esc(logoSrc)}" alt="${esc(e.nome)}">`
     : `<div class="logo-texto">${esc(e.nome)}</div>`;
@@ -171,7 +202,7 @@ export function htmlPapelTimbrado({ corpo, titulo, empresa, logoSrc, marcaDagua 
     </div>
   </header>
   <div class="regua" aria-hidden="true"></div>
-  <main class="area-livre"><img class="marca-dagua" src="${esc(marcaDagua)}" alt="">${corpo || ''}</main>
+  <main class="area-livre">${marcaHtml}${corpo || ''}</main>
   <footer class="rodape">
     <div class="rodape-grid">
       <div><span class="marca-nome">${esc(e.nome)}</span><span class="marca-sub">${esc(e.slogan)}</span></div>

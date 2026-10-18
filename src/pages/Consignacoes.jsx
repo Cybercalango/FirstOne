@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import BackBar from '../components/BackBar';
 import LeitorCodigo from '../components/LeitorCodigo';
 import { supabase } from '../supabaseClient';
-import { getEmpresa, htmlPapelTimbrado, logoParaDataUrl, escHtml } from '../utils/empresa';
+import { getEmpresa, htmlPapelTimbrado, logoParaDataUrl, marcaDaguaDataUrl, escHtml } from '../utils/empresa';
 
 // Consignação: remessa formal de peças a um parceiro, com prazo, devolução e acerto (cobrança).
 // Layout inspirado na "Pesquisa de consignações" do sistema anterior:
@@ -210,7 +210,6 @@ export default function Consignacoes() {
     const list = cItems.filter((x) => x.consignment_id === c.id);
     const linhas = list.map((x) => { const it = itemById(x.item_id); const st = x.sold ? 'Vendida' : x.returned ? 'Devolvida' : 'Em poder'; return `<tr><td>${it?.barcode || x.item_id}${it && ehCodigoLegado(it.barcode) ? '*' : ''}</td><td>${modelName(it)}</td><td>R$ ${Number(it?.price_sale || 0).toFixed(2)}</td><td>${st}</td></tr>`; }).join('');
     const corpo = `
-      <p class="doc-eyebrow">${escHtml(empresa.nome)}</p>
       <h1 class="doc-titulo">Romaneio — Consignação #${c.id}</h1>
       <p class="doc-meta"><strong>Parceiro:</strong> ${escHtml(personName(c.consignor_id))} &nbsp;·&nbsp; <strong>Início:</strong> ${c.start_date} &nbsp;·&nbsp; <strong>Prazo:</strong> ${c.due_date || '—'} &nbsp;·&nbsp; <strong>Status:</strong> ${c.status}</p>
       <table class="doc-tabela"><thead><tr><th>Código</th><th>Modelo</th><th>Valor</th><th>Situação</th></tr></thead><tbody>${linhas}</tbody></table>
@@ -219,7 +218,11 @@ export default function Consignacoes() {
       <p class="doc-nota">* Código legado (etiqueta antiga) — será substituído por código do sistema quando o estoque zerar.</p>`;
     let logoSrc = '';
     try { logoSrc = await logoParaDataUrl(empresa.logo_url || '/logo-flor-da-pele.png'); } catch { logoSrc = ''; }
-    const html = htmlPapelTimbrado({ corpo, titulo: `Romaneio — Consignação #${c.id}`, empresa, logoSrc });
+    // Marca d'água como dataURL: a janela de impressão é about:blank e lá
+    // caminho relativo "/flor-mark.png" não resolve (imagem some).
+    let marcaDagua = '';
+    try { marcaDagua = await marcaDaguaDataUrl('/flor-mark.png'); } catch { marcaDagua = ''; }
+    const html = htmlPapelTimbrado({ corpo, titulo: `Romaneio — Consignação #${c.id}`, empresa, logoSrc, marcaDagua });
     const w = window.open('', '_blank', 'width=820,height=700');
     if (!w) { setMsg('O navegador bloqueou a janela de impressão. Permita pop-ups para este site.'); return; }
     w.document.write(html);
