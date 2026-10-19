@@ -45,6 +45,16 @@
    geravam scroll horizontal. No celular o mínimo volta a ser o conteúdo do botão.
    Desktop (>700px) permanece intocado com o min-width:120px original. */
 @media (max-width: 700px) {
+  /* FORÇA bruta com origem mais alta que qualquer regra de landing.css,
+     independentemente da ordem dos arquivos no bundle: no celular só existe
+     UM botão na barra superior (o ☰) e NENHUMA régua horizontal de categorias.
+     Foi isso o que faltou nas tentativas anteriores — a régua reaparecia por
+     conflito de especificidade entre os dois CSS. */
+  .landing-root .header-actions .btn-ghost:not(.nav-toggle),
+  .landing-root .header-actions .favorite-counter,
+  .landing-root .contact-header { display: none !important; }
+  .landing-root .category-tabs { display: none !important; }
+
   .landing-root .btn,
   .landing-root button.btn,
   .landing-root button {
@@ -56,11 +66,6 @@
   .landing-root .product-heart {
     padding-inline: 0 !important;
   }
-  /* botão "Fale com a gente" do header: some no celular (o menu ☰ já o contém) —
-     era mais um bloco de 120px+ empurrando a régua para além da tela */
-  .landing-root .contact-header { display: none !important; }
-  /* categoria tab quebra linha em vez de esticar a régua horizontal */
-  .category-tab { max-width: 100%; }
 }
 .landing-root .btn-link {
   background: transparent !important;

@@ -165,14 +165,20 @@
 }
 @media (max-width: 700px) {
  .page-width { padding-inline: 20px; }
- .announcement { font-size: 10px; height: 32px; letter-spacing: .5px; padding-inline: 12px; text-align: center; }
- .site-header { height: 78px; grid-template-columns: minmax(0,1fr) auto; gap: 10px; }
- .logo-link { width: 92px; height: 70px; }
+ .announcement { font-size: 10px; height: 32px; letter-spacing: .5px; padding-inline: 12px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+ /* HEADER MOBILE: logo à esquerda + UMA única ação à direita (☰). As antigas
+    ações Buscar/Favoritos/"Fale com a gente" saem da barra e passam para o
+    menu lateral — a parte superior fica limpa, sem régua de botões. */
+ .site-header { height: 64px; grid-template-columns: minmax(0,1fr) auto; gap: 10px; }
+ .logo-link { width: 84px; height: 56px; }
  .desktop-nav { display: none; }
  .nav-toggle { display: inline-flex; }
- .header-actions { gap: 2px; }
+ .header-actions { gap: 0; flex-wrap: nowrap; }
  .header-actions button { width: 44px; height: 44px; }
  .header-actions svg { width: 21px; height: 21px; }
+ .header-actions .btn-search-mobile,
+ .header-actions .favorite-counter { display: none !important; }
+ .contact-header { display: none !important; }
  .favorite-counter span { top: 4px; right: 4px; width: 15px; height: 15px; font-size: 9px; }
  .hero-copy h1 { font-size: 11px; margin-top: 20px; }
  .desktop-break { display: none; }
@@ -239,7 +245,7 @@
     um único botão "Categorias · <ativa>" que abre o menu lateral. Adeus scroll
     horizontal e botões miúdos. */
  .category-picker { display: flex !important; width: 100%; justify-content: space-between; min-height: 46px; height: auto !important; font-size: 14px; }
- .category-tabs { display: none; }
+ .category-tabs { display: none !important; }
 
  /* HERO: layout em coluna — texto primeiro, foto editorial abaixo em proporção
     natural (4:5). Nada é cortado pelo crop fixo de desktop e o CTA ocupa a largura. */
@@ -253,10 +259,10 @@
  .hero-cta { margin-top: 24px; height: 48px; width: 100%; max-width: none; }
  .collection-stamp { display: none; }
 
- /* CATEGORIAS (Anel, Brincos, Colares…): sem scroll lateral rígido — os botões
-    quebram linha e preenchem a tela em grade fluida (wrap). Desktop intacto. */
- .category-tabs { display: flex; flex-wrap: wrap; gap: 8px; overflow-x: visible; padding-bottom: 0; }
- .category-tab { flex: 1 1 auto; min-width: max-content; min-height: 44px; padding-inline: 14px; font-size: 13px; }
+ /* CATEGORIAS (Anel, Brincos, Colares…): no celular a régua inteira está
+    removida (display:none !important acima) — as categorias vivem apenas no
+    menu lateral (drawer), empilhadas e legíveis. Não há mais botões rígidos
+    com scroll horizontal em lugar nenhum da landing mobile. */
 
  /* CATÁLOGO: cards horizontais em coluna única — foto à esquerda (não cortada),
     nome/preço/ações à direita. Alvos de toque ≥44px. */
