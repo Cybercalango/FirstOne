@@ -93,6 +93,9 @@
 .landing-root .collection-note { font-family: var(--font-display); font-style: italic; font-size: 17px; color: var(--muted-foreground); padding-bottom: 5px; }
 .landing-root .catalog-controls { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 16px; align-items: center; margin-top: 30px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
 .landing-root .category-tabs { display: flex; gap: 8px; }
+/* "Categorias · <ativa>" é exclusivo do mobile (≤700px); escondido no desktop,
+   onde a régua .category-tabs acima continua sendo exibida. */
+.landing-root .category-picker { display: none; }
 .landing-root .category-tab { height: 34px; font-size: 11px; padding-inline: 20px; box-shadow: none; border-radius: 3px; }
 .landing-root .sort-control { display: flex; align-items: center; gap: 8px; color: var(--muted-foreground); font-size: 11px; }
 .landing-root .sort-control select { background: transparent; border: none; padding-right: 6px; outline-color: var(--primary); }
@@ -218,6 +221,26 @@
 }
 /* ---- Mobile-first refinado (≤700px): fluxo vertical, alvos de toque, sem cortes ---- */
 @media (max-width: 700px) {
+ /* MENU LATERAL (drawer): o menu ☰ desliza da esquerda, painel alto com as
+    categorias empilhadas em linhas de largura total — legível, alvo 48px.
+    Fecha ao tocar o fundo ou o X. Só mobile; no desktop continua modal central. */
+ .landing-root .mobile-menu.drawer {
+   position: fixed; inset: 0 auto 0 0; margin: 0; pointer-events: auto;
+   width: min(320px, 86vw); max-width: none; max-height: none; height: 100%;
+   border-radius: 0; border-left: none; border-top: none; border-bottom: none;
+   padding: 26px 18px calc(18px + env(safe-area-inset-bottom));
+   animation: drawer-in .22s ease both;
+ }
+ @keyframes drawer-in { from { transform: translateX(-100%); } to { transform: none; } }
+ .mobile-menu.drawer nav button { width: 100%; justify-content: flex-start; text-align: left; font-size: 15px; height: 48px; padding-inline: 14px; }
+ .mobile-menu.drawer nav button.is-active { background: var(--primary) !important; color: var(--primary-foreground) !important; }
+
+ /* CATEGORIAS no catálogo: a régua de botões sai de cena no celular e dá lugar a
+    um único botão "Categorias · <ativa>" que abre o menu lateral. Adeus scroll
+    horizontal e botões miúdos. */
+ .category-picker { display: flex !important; width: 100%; justify-content: space-between; min-height: 46px; height: auto !important; font-size: 14px; }
+ .category-tabs { display: none; }
+
  /* HERO: layout em coluna — texto primeiro, foto editorial abaixo em proporção
     natural (4:5). Nada é cortado pelo crop fixo de desktop e o CTA ocupa a largura. */
  .editorial-hero { height: auto; display: flex; flex-direction: column; }
