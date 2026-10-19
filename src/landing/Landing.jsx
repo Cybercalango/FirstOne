@@ -101,6 +101,12 @@ export default function Landing() {
             <span className="collection-note">Pequenos detalhes. Grandes sentimentos.</span>
           </div>
           <div className="catalog-controls">
+            {/* Mobile: a régua de categorias vira um botão que abre o menu lateral
+                (drawer) — nada de fileiras rígidas com scroll horizontal.
+                Desktop (>700px): os botões abaixo continuam visíveis normalmente. */}
+            <Button variant="outline" className="category-picker" onClick={() => setMenu(true)}>
+              Categorias · {category}
+            </Button>
             <div className="category-tabs" aria-label="Categorias">
               {['Todas as joias', ...categories].map((c) => (
                 <Button key={c} variant={category === c ? 'default' : 'ghost'} className="category-tab" aria-pressed={category === c} onClick={() => setCategory(c)}>{c}</Button>
@@ -191,14 +197,17 @@ export default function Landing() {
           </>)}
         </DialogContent>
       </Dialog>
+      {/* Menu lateral (drawer) — só mobile. As categorias viram linhas empilhadas
+          em largura total (legíveis, alvo de toque 48px), com a categoria ativa
+          destacada. Substitui a régua horizontal de botões no celular. */}
       <Dialog open={menu} onOpenChange={setMenu}>
-        <DialogContent onClose={() => setMenu(false)} className="mobile-menu">
+        <DialogContent onClose={() => setMenu(false)} className="mobile-menu drawer">
           <DialogTitle>Menu</DialogTitle>
           <DialogDescription>Veja as joias por categoria ou fale com a gente.</DialogDescription>
           <nav aria-label="Menu do catálogo">
-            <Button variant="ghost" onClick={() => { setMenu(false); setCategory('Todas as joias'); setFavoritesOnly(false); requestAnimationFrame(scrollToCatalog); }}>Nossa coleção</Button>
+            <Button variant="ghost" className={category === 'Todas as joias' && !favoritesOnly ? 'is-active' : ''} onClick={() => { setMenu(false); setCategory('Todas as joias'); setFavoritesOnly(false); requestAnimationFrame(scrollToCatalog); }}>Nossa coleção</Button>
             {categories.map((c) => (
-              <Button key={c} variant="ghost" onClick={() => { setMenu(false); setCategory(c); setFavoritesOnly(false); requestAnimationFrame(scrollToCatalog); }}>{c}</Button>
+              <Button key={c} variant="ghost" className={category === c && !favoritesOnly ? 'is-active' : ''} onClick={() => { setMenu(false); setCategory(c); setFavoritesOnly(false); requestAnimationFrame(scrollToCatalog); }}>{c}</Button>
             ))}
             <Button variant="outline" onClick={() => { setMenu(false); setContact(true); }}><MessageCircle /> Fale com a gente</Button>
           </nav>
