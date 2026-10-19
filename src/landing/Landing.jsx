@@ -84,10 +84,6 @@ export default function Landing() {
               <div className="eyebrow"><span /> JOIAS QUE CELEBRAM VOCÊ</div>
               <h1>Flor da Pele<span>Seu brilho,<br /><em>sua essência.</em></span></h1>
               <p>Detalhes que encantam. Joias folheadas que<br className="desktop-break" /> tornam o seu dia a dia ainda mais especial.</p>
-              {/* No mobile este botão é ocultado via CSS (.mobile-hide): ele fica
-                  logo abaixo da faixa de anúncio e era o "botão travado" que
-                  sobrava na tela. O acesso ao catálogo no celular passa a ser o
-                  ☰ (drawer) e o CTA do rodapé. Desktop inalterado. */}
               <Button className="hero-cta mobile-hide" onClick={scrollToCatalog}>Encontre sua joia <ArrowRight /></Button>
               <div className="hero-caption"><span /> Delicadeza em cada detalhe</div>
             </div>
@@ -170,7 +166,8 @@ export default function Landing() {
           <div className="page-width closing-inner">
             <div className="closing-flower"><img src={logo} alt="" width={500} height={500} loading="lazy" /></div>
             <div><div className="eyebrow">MAIS DO QUE UM ACESSÓRIO</div><h2>O que faz você brilhar?</h2><p>Uma lembrança, um novo começo ou simplesmente ser você.</p></div>
-            <Button variant="outline" onClick={() => setContact(true)}>Vamos encontrar sua joia <ArrowRight /></Button>
+            {/* Mobile: CTA final em largura total, alvo de toque 48px (regra .closing-inner button no landing.css) */}
+            <Button className="closing-cta" variant="outline" onClick={() => setContact(true)}>Fale com a gente <ArrowRight /></Button>
           </div>
         </section>
       </main>
