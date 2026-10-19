@@ -79,3 +79,13 @@
   transform: translateY(-1px) !important;
   box-shadow: 0 10px 24px rgba(142, 42, 110, 0.16) !important;
 }
+
+/* MOBILE (≤700px): classe utilitária .mobile-hide — esconde qualquer elemento
+   marcado no JSX apenas no celular (desktop >700px permanece intacto).
+   Uso atual: botão "Encontre sua joia" do hero (ficava travado logo abaixo da
+   faixa de anúncio) e a strip de valores com ícones. O acesso ao catálogo no
+   mobile passa a ser exclusivamente pelo ☰ (drawer: Nossa coleção / categorias)
+   e pelo CTA "Fale com a gente" do menu/rodapé. */
+@media (max-width: 700px) {
+  .landing-root .mobile-hide { display: none !important; }
+}

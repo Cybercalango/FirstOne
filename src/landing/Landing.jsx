@@ -84,13 +84,17 @@ export default function Landing() {
               <div className="eyebrow"><span /> JOIAS QUE CELEBRAM VOCÊ</div>
               <h1>Flor da Pele<span>Seu brilho,<br /><em>sua essência.</em></span></h1>
               <p>Detalhes que encantam. Joias folheadas que<br className="desktop-break" /> tornam o seu dia a dia ainda mais especial.</p>
-              <Button className="hero-cta" onClick={scrollToCatalog}>Encontre sua joia <ArrowRight /></Button>
+              {/* No mobile este botão é ocultado via CSS (.mobile-hide): ele fica
+                  logo abaixo da faixa de anúncio e era o "botão travado" que
+                  sobrava na tela. O acesso ao catálogo no celular passa a ser o
+                  ☰ (drawer) e o CTA do rodapé. Desktop inalterado. */}
+              <Button className="hero-cta mobile-hide" onClick={scrollToCatalog}>Encontre sua joia <ArrowRight /></Button>
               <div className="hero-caption"><span /> Delicadeza em cada detalhe</div>
             </div>
           </div>
           <div className="collection-stamp">UM BRILHO<br /><em>naturalmente seu</em></div>
         </section>
-        <div className="values-strip">
+        <div className="values-strip mobile-hide">
           <div><Gem /><span>Beleza nos detalhes</span></div>
           <div><Sparkles /><span>Joias para todos os momentos</span></div>
           <div><Gift /><span>Um presente cheio de significado</span></div>
