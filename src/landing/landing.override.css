@@ -37,6 +37,30 @@
 .landing-root .btn-ghost {
   background: transparent !important;
   color: var(--theme-primary) !important;
+  box-shadow: none !important;
+}
+/* MOBILE (≤700px): os botões .btn-ghost estavam "travados na horizontal" porque a
+   regra global min-width:120px!important + padding 0 16px os impedia de encolher —
+   fileiras como header-actions e category-tabs estouravam a largura da tela e
+   geravam scroll horizontal. No celular o mínimo volta a ser o conteúdo do botão.
+   Desktop (>700px) permanece intocado com o min-width:120px original. */
+@media (max-width: 700px) {
+  .landing-root .btn,
+  .landing-root button.btn,
+  .landing-root button {
+    min-width: 0 !important;
+    padding-inline: 14px !important;
+  }
+  /* ícones continuam quadrados (a regra btn-icon já garante 44x44 no mobile) */
+  .landing-root .header-actions .btn-ghost:not(.nav-toggle),
+  .landing-root .product-heart {
+    padding-inline: 0 !important;
+  }
+  /* botão "Fale com a gente" do header: some no celular (o menu ☰ já o contém) —
+     era mais um bloco de 120px+ empurrando a régua para além da tela */
+  .landing-root .contact-header { display: none !important; }
+  /* categoria tab quebra linha em vez de esticar a régua horizontal */
+  .category-tab { max-width: 100%; }
 }
 .landing-root .btn-link {
   background: transparent !important;
