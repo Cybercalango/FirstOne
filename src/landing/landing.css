@@ -275,4 +275,12 @@
 }
 /* Hover apenas onde existe mouse — evita "grudar" estado hover ao tocar no celular */
 @media (hover: none) { .product-photo:hover img { transform: none; } }
+/* Guarda anti scroll-horizontal: qualquer linha de botões que ainda estourar a
+   largura (ex.: .btn-ghost com min-width herdado de override) é contida aqui,
+   não empurrando a página. Só mobile; desktop intocado. */
+@media (max-width: 700px) {
+  body { overflow-x: clip; }
+  .landing-root { max-width: 100vw; }
+  .category-tabs, .header-actions { flex-wrap: wrap; }
+}
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
