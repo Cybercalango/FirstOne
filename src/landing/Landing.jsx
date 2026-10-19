@@ -16,6 +16,21 @@ import './landing.override.css';
 
 const categories = [...new Set([...baseCategories, 'Brincos', 'Colares', 'Pulseiras'])];
 
+// Mesmo breakpoint dos @media (max-width: 700px) da landing. Usado para NÃO
+// renderizar no celular a régua de categorias da barra superior (desktop-nav).
+function useIsMobile(breakpointPx = 700) {
+  const [mobile, setMobile] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia(`(max-width:${breakpointPx}px)`).matches,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia(`(max-width:${breakpointPx}px)`);
+    const on = (e) => setMobile(e.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, [breakpointPx]);
+  return mobile;
+}
+
 export default function Landing() {
   const [products, setProducts] = useState(null); // null = carregando
   const [loadError, setLoadError] = useState('');
@@ -29,6 +44,7 @@ export default function Landing() {
   const [sort, setSort] = useState('featured');
   const [menu, setMenu] = useState(false);
   const catalog = useRef(null);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     let alive = true;
@@ -61,12 +77,19 @@ export default function Landing() {
       <div className="announcement">Um toque de brilho. Uma expressão de você. <Sparkles size={12} /></div>
       <header className="site-header page-width">
         <a href="/" className="logo-link" aria-label="Flor da Pele, início"><img src={logo} width={500} height={500} alt="Flor da Pele — Joias Folheadas" /></a>
-        <nav className="desktop-nav" aria-label="Navegação principal">
-          <Button variant="link" onClick={() => { setCategory('Todas as joias'); setFavoritesOnly(false); scrollToCatalog(); }}>Nossa coleção</Button>
-          {categories.map((c) => (
-            <Button key={c} variant="ghost" onClick={() => { setCategory(c); scrollToCatalog(); }}>{c}</Button>
-          ))}
-        </nav>
+        {/* Mobile: a régua de categorias da barra superior NÃO existe — o acesso
+            a Anéis/Brincos/etc. é exclusivamente pelo drawer ☰. Em vez de esconder
+            via CSS (que vinha sendo perdido em conflitos de especificidade entre
+            landing.css e landing.override.css), o bloco nem é renderizado no
+            celular: isMobile vem do mesmo breakpoint 700px usado nos @media. */}
+        {!isMobile && (
+          <nav className="desktop-nav" aria-label="Navegação principal">
+            <Button variant="link" onClick={() => { setCategory('Todas as joias'); setFavoritesOnly(false); scrollToCatalog(); }}>Nossa coleção</Button>
+            {categories.map((c) => (
+              <Button key={c} variant="ghost" onClick={() => { setCategory(c); scrollToCatalog(); }}>{c}</Button>
+            ))}
+          </nav>
+        )}
         <div className="header-actions">
           <Button variant="ghost" size="icon" className="btn-search-mobile" aria-label="Buscar joias" title="Buscar joias" onClick={() => { setSearchOpen(!searchOpen); scrollToCatalog(); }}><Search /></Button>
           <Button variant="ghost" size="icon" aria-label="Ver favoritas" title="Ver favoritas" className="favorite-counter" onClick={() => { setFavoritesOnly(!favoritesOnly); scrollToCatalog(); }}>
