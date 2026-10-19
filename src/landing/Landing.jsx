@@ -68,7 +68,7 @@ export default function Landing() {
           ))}
         </nav>
         <div className="header-actions">
-          <Button variant="ghost" size="icon" aria-label="Buscar joias" title="Buscar joias" onClick={() => { setSearchOpen(!searchOpen); scrollToCatalog(); }}><Search /></Button>
+          <Button variant="ghost" size="icon" className="btn-search-mobile" aria-label="Buscar joias" title="Buscar joias" onClick={() => { setSearchOpen(!searchOpen); scrollToCatalog(); }}><Search /></Button>
           <Button variant="ghost" size="icon" aria-label="Ver favoritas" title="Ver favoritas" className="favorite-counter" onClick={() => { setFavoritesOnly(!favoritesOnly); scrollToCatalog(); }}>
             <Heart fill={favoritesOnly ? 'currentColor' : 'none'} />{favorites.length > 0 && <span>{favorites.length}</span>}
           </Button>
@@ -205,6 +205,10 @@ export default function Landing() {
           <DialogTitle>Menu</DialogTitle>
           <DialogDescription>Veja as joias por categoria ou fale com a gente.</DialogDescription>
           <nav aria-label="Menu do catálogo">
+            {/* Buscar e Favoritos moravam na barra superior; no celular a barra
+                ficou limpa (logo + ☰) e elas vivem aqui, como linhas do drawer. */}
+            <Button variant="ghost" className="drawer-search" onClick={() => { setMenu(false); setSearchOpen(true); requestAnimationFrame(scrollToCatalog); }}><Search /> Buscar joias</Button>
+            <Button variant="ghost" className={favoritesOnly ? 'is-active' : ''} onClick={() => { setMenu(false); setFavoritesOnly(!favoritesOnly); requestAnimationFrame(scrollToCatalog); }}><Heart fill={favoritesOnly ? 'currentColor' : 'none'} /> Favoritas{favorites.length > 0 ? ` (${favorites.length})` : ''}</Button>
             <Button variant="ghost" className={category === 'Todas as joias' && !favoritesOnly ? 'is-active' : ''} onClick={() => { setMenu(false); setCategory('Todas as joias'); setFavoritesOnly(false); requestAnimationFrame(scrollToCatalog); }}>Nossa coleção</Button>
             {categories.map((c) => (
               <Button key={c} variant="ghost" className={category === c && !favoritesOnly ? 'is-active' : ''} onClick={() => { setMenu(false); setCategory(c); setFavoritesOnly(false); requestAnimationFrame(scrollToCatalog); }}>{c}</Button>
