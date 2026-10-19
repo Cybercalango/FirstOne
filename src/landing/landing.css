@@ -192,8 +192,9 @@
  .catalog-heading .eyebrow { font-size: 10px; letter-spacing: 1.3px; }
  .catalog-heading h2 { font-size: 32px; max-width: 300px; line-height: 1.15; margin-top: 12px; }
  .catalog-controls { grid-template-columns: minmax(0,1fr); margin-top: 22px; gap: 14px; padding-bottom: 14px; }
- .category-tabs { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
- .category-tabs::-webkit-scrollbar { display: none; }
+ /* Régua de categorias NÃO existe no mobile (ver regra no fim do arquivo);
+    aqui apenas neutralizamos o scroll horizontal caso ela volte por engano. */
+ .category-tabs { display: none; }
  .category-tab { flex: 0 0 auto; padding-inline: 16px; font-size: 12px; height: 42px; }
  .sort-control { justify-self: end; font-size: 12px; }
  .sort-control select { font-size: 14px; padding: 8px 8px; border: 1px solid var(--border); border-radius: 4px; background: var(--background); }
@@ -304,12 +305,20 @@
 }
 /* Hover apenas onde existe mouse — evita "grudar" estado hover ao tocar no celular */
 @media (hover: none) { .product-photo:hover img { transform: none; } }
-/* Guarda anti scroll-horizontal: qualquer linha de botões que ainda estourar a
-   largura (ex.: .btn-ghost com min-width herdado de override) é contida aqui,
-   não empurrando a página. Só mobile; desktop intocado. */
+/* Guarda anti scroll-horizontal: o header mobile já é grid de 2 colunas
+   (logo + ☰), e a régua de categorias some no celular (ver regra abaixo).
+   Não usamos mais flex-wrap aqui: wrap em container com overflow-x:auto
+   vira "scroll horizontal" na prática — era exatamente isso que mantinha os
+   botões Anel/Brincos/Pulseiras visíveis e roláveis no mobile. */
 @media (max-width: 700px) {
   body { overflow-x: clip; }
   .landing-root { max-width: 100vw; }
-  .category-tabs, .header-actions { flex-wrap: wrap; }
+  /* FORÇA FINAL da régua de categorias no mobile: colocada no fim do arquivo
+     para vencer, por ordem de escrita, as regras anteriores do próprio
+     landing.css (linhas ~195/313 definiam display:flex / flex-wrap e
+     reativavam a régua após o display:none intermediário). Sem !important
+     duplicado + seletor com escopo .landing-root, ela reaparecia. */
+  .landing-root .catalog-controls .category-tabs,
+  .landing-root .category-tabs { display: none !important; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
