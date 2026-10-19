@@ -87,5 +87,14 @@
    mobile passa a ser exclusivamente pelo ☰ (drawer: Nossa coleção / categorias)
    e pelo CTA "Fale com a gente" do menu/rodapé. */
 @media (max-width: 700px) {
-  .landing-root .mobile-hide { display: none !important; }
+  /* Força dupla: o seletor com .landing-root tem especificidade maior que as
+     regras de landing.css (ex.: .values-strip{display:flex} do carrossel), e o
+     !important vence qualquer display sem flag. Sem isso, a strip reaparecia
+     no celular por conflito de ordem/especificidade entre os dois CSS. */
+  .landing-root .mobile-hide,
+  .landing-root .mobile-hide * { display: none !important; }
+
+  /* CTA final da faixa "O que faz você brilhar?": em largura total no mobile
+     (alvo de toque grande), desktop permanece alinhado à esquerda. */
+  .landing-root .closing-inner button.closing-cta { width: 100%; justify-content: space-between; min-height: 48px; }
 }
