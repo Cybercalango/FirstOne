@@ -99,18 +99,34 @@
 .landing-root .sort-control { display: flex; align-items: center; gap: 8px; color: var(--muted-foreground); font-size: 11px; }
 .landing-root .sort-control select { background: transparent; border: none; padding-right: 6px; outline-color: var(--primary); }
 .landing-root .catalog-count { font-size: 10px; color: var(--muted-foreground); padding-block: 17px; }
-.landing-root .product-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 23px; }
-.landing-root .product-photo { position: relative; background: var(--photo-background); overflow: hidden; border-radius: 3px; aspect-ratio: 1 / 1.08; -webkit-tap-highlight-color: transparent; }
-.landing-root .product-photo a { display: block; width: 100%; height: 100%; min-height: 44px; }
-.landing-root .product-photo img { width: 100%; height: 100%; object-fit: cover; transition: transform 500ms ease; }
-.landing-root .product-photo:hover img { transform: scale(1.045); }
-.landing-root .product-tag { position: absolute; top: 13px; left: 13px; font-size: 8px; letter-spacing: .6px; background: var(--background); color: var(--primary); padding: 6px 9px; border-radius: 2px; pointer-events: none; }
-.landing-root .product-heart { position: absolute; top: 9px; right: 9px; color: var(--primary); width: 32px; height: 32px; border-radius: 50%; }
-.landing-root .product-heart svg { stroke-width: 1.4; }
-.landing-root .product-info { padding: 17px 0 0; }
-.landing-root .product-info > span { color: var(--muted-foreground); font-size: 9px; }
-.landing-root .product-info h3 { font-size: 14px; font-weight: 500; margin-top: 6px; }
-.landing-root .product-info button { font-size: 10px; padding: 0; margin-top: 5px; height: 29px; justify-content: start; gap: 12px; }
+/* ===== CARD DO CATÁLOGO (redesign de legibilidade — desktop) =====
+   Motivos das escolhas (queixas do usuário: "ruim de ler informações e ver imagens"):
+   - foto em 4:5 com object-fit: CONTAIN → a joia inteira aparece (antes, cover
+     cortava anéis/colares no crop 1:1.08); fundo neutro mantém o bloco harmônico;
+   - grade 3 colunas → cards mais largos que as 4 colunas apertadas de antes;
+   - nome 16px (era 14px), categoria 11px (era 9px), preço 16px bold (era ~10px
+   herdado) — hierarquia real de leitura;
+   - um único CTA "Ver joia" por card no lugar de dois links de texto miúdos. */
+.landing-root .product-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 26px; }
+.landing-root .product { position: relative; display: flex; flex-direction: column; background: var(--background); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; transition: box-shadow 200ms ease, transform 200ms ease; }
+.landing-root .product:hover { box-shadow: 0 12px 30px rgba(0,0,0,.08); transform: translateY(-2px); }
+.landing-root .product-photo { display: block; position: relative; background: var(--photo-background); aspect-ratio: 4 / 5; -webkit-tap-highlight-color: transparent; }
+.landing-root .product-photo img { width: 100%; height: 100%; object-fit: contain; object-position: center; transition: transform 500ms ease; }
+.landing-root .product-photo:hover img { transform: scale(1.03); }
+.landing-root .product-photo-empty { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; color: var(--muted-foreground); }
+.landing-root .product-tag { position: absolute; top: 10px; left: 10px; font-size: 10px; font-weight: 600; letter-spacing: .6px; background: var(--background); color: var(--primary); padding: 5px 9px; border-radius: 999px; pointer-events: none; box-shadow: 0 1px 4px rgba(0,0,0,.10); }
+.landing-root .product-tag-unavailable { background: var(--foreground); color: var(--background); }
+.landing-root .product-heart { position: absolute; top: 6px; right: 6px; z-index: 2; color: var(--primary); background: color-mix(in oklch, var(--background) 82%, transparent); width: 36px; height: 36px; border-radius: 50%; }
+.landing-root .product-heart svg { stroke-width: 1.6; }
+.landing-root .product-info { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px 16px; flex: 1; }
+.landing-root .product-category { color: var(--muted-foreground); font-size: 11px; letter-spacing: .4px; text-transform: uppercase; }
+.landing-root .product-name { font-family: var(--font-display); font-size: 16px; font-weight: 500; line-height: 1.25; margin-top: 2px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.landing-root .product-desc { color: var(--muted-foreground); font-size: 12.5px; line-height: 1.45; margin-top: 2px; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.landing-root .product-meta { display: flex; align-items: baseline; gap: 10px; margin-top: 6px; }
+.landing-root .product-price { font-size: 16px; font-weight: 700; color: var(--primary); }
+.landing-root .product-unavailable { font-size: 11px; color: var(--muted-foreground); }
+.landing-root .product-cta { margin-top: auto; width: 100%; height: 40px; font-size: 13px; gap: 10px; }
+.landing-root .product-info .product-cta { margin-top: 12px; }
 .landing-root .catalog-bottom { display: flex; align-items: center; justify-content: center; gap: 18px; border-top: 1px solid var(--border); margin-top: 38px; padding-top: 25px; color: var(--muted-foreground); font-size: 10px; }
 .landing-root .catalog-bottom svg { color: var(--gold); stroke-width: 1; }
 .landing-root .closing-band { background: var(--secondary); padding-block: 36px; }
@@ -159,7 +175,8 @@
  .hero-copy h1 > span { font-size: 56px; }
  .catalog-heading h2 { font-size: 32px; }
  .category-tab { padding-inline: 15px; font-size: 10px; }
- .product-grid { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 22px 16px; }
+ /* ≤1100px: duas colunas de cards verticais (a base já é repeat(3)) */
+ .product-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 22px 18px; }
 }
 @media (max-width: 700px) {
  .page-width { padding-inline: 20px; }
@@ -197,11 +214,14 @@
  .search-row { padding-top: 12px; }
  .search-row label { max-width: none; min-height: 46px; }
  .search-row input { font-size: 16px; padding: 11px 0; }
- .product-tag { font-size: 9px; top: 10px; left: 8px; padding: 5px 7px; }
- .product-info { padding-top: 12px; }
- .product-info > span { font-size: 10px; }
- .product-info h3 { font-size: 14px; }
- .product-info button { font-size: 12px; height: 38px; gap: 10px; }
+ .product-tag { font-size: 10px; top: 8px; left: 8px; padding: 5px 8px; }
+ /* tipografia mobile do card: nada abaixo de 12px (as fontes 9-10px do
+    desktop eram a causa da "ruim de ler") */
+ .product-category { font-size: 11px; }
+ .product-name { font-size: 16px; }
+ .product-desc { font-size: 13px; -webkit-line-clamp: 2; }
+ .product-price { font-size: 17px; }
+ .product-info { padding: 12px 14px 14px; }
  .empty-state { padding: 44px 16px; }
  .empty-state h3 { font-size: 26px; }
  .empty-state p { font-size: 13px; }
@@ -260,17 +280,14 @@
     menu lateral (drawer), empilhadas e legíveis. Não há mais botões rígidos
     com scroll horizontal em lugar nenhum da landing mobile. */
 
- /* CATÁLOGO: cards horizontais em coluna única — foto à esquerda (não cortada),
-    nome/preço/ações à direita. Alvos de toque ≥44px. */
- .product-grid { grid-template-columns: minmax(0,1fr); gap: 16px; }
- .landing-root .product { display: grid; grid-template-columns: 116px minmax(0,1fr); gap: 14px; align-items: stretch; }
- .product-photo { aspect-ratio: 1 / 1; height: 100%; min-height: 116px; }
- .product-photo img { object-fit: cover; }
- .product-info { padding-top: 2px; display: flex; flex-direction: column; gap: 2px; }
- .product-info h3 { font-size: 15px; line-height: 1.3; }
- .product-info button { min-height: 44px; width: fit-content; }
- .product-buy-link { margin-top: 2px; }
- .product-heart { right: 2px; top: 2px; width: 44px; height: 44px; min-width: 44px; min-height: 44px; }
+ /* CATÁLOGO MOBILE: cards verticais em DUAS colunas — foto 4:5 com a joia
+    inteira (contain), nome 16px, preço destacado e um único CTA por card.
+    (Antes: linha com foto de 116px cortada por cover + fontes de 9-12px.) */
+ .product-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px 12px; }
+ .landing-root .product { display: flex; }
+ .product-photo { aspect-ratio: 4 / 5; height: auto; min-height: 0; border-radius: 0; }
+ .product-heart { right: 4px; top: 4px; width: 40px; height: 40px; min-width: 40px; min-height: 40px; }
+ .product-cta { height: 44px; font-size: 13px; } /* alvo de toque ≥44px */
 
  /* VALUES-STRIP: carrossel horizontal com "scroll-snap" no celular
     (em telas ≥700px continua sendo a faixa de 3 colunas do desktop) */
@@ -286,17 +303,13 @@
  .site-footer { display: block; text-align: center; padding-block: 30px; }
  .site-footer a { display: inline-block; padding: 10px 14px; }
 }
-/* Telas pequenas (≤380px): card empilhado (foto grande em cima, info abaixo)
-   porque 116px de foto + texto ficaria apertado em 320-360px de largura */
+/* Telas pequenas (≤380px): coluna única — cards grandes e legíveis em 320-360px */
 @media (max-width: 380px) {
- .landing-root .product { grid-template-columns: minmax(0,1fr); }
- .product-photo { aspect-ratio: 4 / 5; max-width: none; height: auto; }
+ .product-grid { grid-template-columns: minmax(0,1fr); gap: 16px; }
 }
-/* Tablets pequenos (521–700px): duas colunas de cards verticais */
+/* Tablets pequenos (521–700px): três colunas de cards verticais (espaço sobrando) */
 @media (min-width: 521px) and (max-width: 700px) {
- .product-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 20px 14px; }
- .landing-root .product { display: block; }
- .product-photo { aspect-ratio: 1 / 1; height: auto; min-height: 0; }
+ .product-grid { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 18px 14px; }
 }
 /* Hover apenas onde existe mouse — evita "grudar" estado hover ao tocar no celular */
 @media (hover: none) { .product-photo:hover img { transform: none; } }
