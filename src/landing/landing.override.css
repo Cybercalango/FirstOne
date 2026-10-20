@@ -51,8 +51,8 @@
      .nav-toggle/.contact-header do fim de landing.css usam display:inline-flex
      !important e esta lista de ocultação NÃO os inclui mais. */
   .landing-root .header-actions .btn-search-mobile,
-  .landing-root .header-actions .favorite-counter,
-  .landing-root .desktop-nav { display: none !important; }
+  .landing-root .header-actions .favorite-counter { display: none !important; }
+  /* desktop-nav removido do JSX — não precisa mais de display:none aqui */
   .landing-root .category-tabs { display: none !important; }
 
   .landing-root .btn,
