@@ -1,7 +1,7 @@
 // Landing page + catálogo público "Flor da Pele"
 // Portada do backup Work/ (TanStack Router) para o roteador atual (react-router-dom),
 // sem Tailwind/Radix: primitivos locais em ./ui.jsx e CSS escopado em ./landing.css.
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { Component, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight, ChevronLeft, ChevronRight, Heart, Search, Sparkles, Gift, Gem, X, SlidersHorizontal,
@@ -18,12 +18,58 @@ import './landing.override.css';
 
 const categories = [...new Set([...baseCategories, 'Brincos', 'Colares', 'Pulseiras'])];
 
+/*
+ * ErrorBoundary do catálogo — POSTMORTEM da "página em branco" (2026-10-20):
+ * O app inteiro é client-rendered (createRoot em main.jsx) e NÃO existia
+ * nenhum ErrorBoundary. Qualquer exceção durante o render montava <div id="root">
+ * vazio → tela 100% branca, sem mensagem. Com este boundary, falhas de render
+ * passam a mostrar um card de erro com botão "Recarregar" no lugar da tela branca.
+ */
+class LandingErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  componentDidCatch(error, info) {
+    // registra no console para diagnóstico remoto (o usuário pode copiar daqui)
+    console.error('[Landing] erro de render capturado pelo ErrorBoundary:', error, info?.componentStack);
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="landing-root">
+          <div className="page-width" style={{ paddingBlock: '80px' }}>
+            <div className="empty-state">
+              <h3>Ops! Algo quebrou</h3>
+              <p>{String(this.state.error?.message || this.state.error)}</p>
+              <Button variant="outline" onClick={() => window.location.reload()}>Recarregar página</Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export default function LandingPage(props) {
+  return (
+    <LandingErrorBoundary>
+      <Landing {...props} />
+    </LandingErrorBoundary>
+  );
+}
+
 // OBS: o hook useIsMobile foi removido junto com o bloco desktop-nav.
 // A régua de categorias do topo não é mais renderizada em NENHUM tamanho de
 // tela (decisão feita direto no JSX), então não há mais uso de breakpoint JS
 // aqui — o acesso a categorias segue por CSS responsivo + tabs/drawer.
 
-export default function Landing() {
+// Componente interno (o export default é LandingPage, com ErrorBoundary, acima).
+function Landing() {
   const [products, setProducts] = useState(null); // null = carregando
   const [loadError, setLoadError] = useState('');
   const [category, setCategory] = useState('Todas as joias');
@@ -45,14 +91,20 @@ export default function Landing() {
   const [carouselState, setCarouselState] = useState({ prev: false, next: false });
 
   // Recalcula se há cards antes/depois da posição atual do scroll (p/ habilitar ‹ ›).
+  // DEFESA (página em branco, 2026-10-20): nunca chamar setState dentro de onScroll
+  // sem verificação — a cada evento de scroll eram criados DOIS objetos novos,
+  // o estado mudava de identidade a cada frame e o React re-renderizava a árvore
+  // inteira durante o arrasto, podendo estourar "Maximum update depth exceeded".
+  // Agora só há setState quando os booleans realmente mudam.
   const updateCarouselArrows = () => {
     const el = carouselRef.current;
     if (!el) return;
     const eps = 4;
-    setCarouselState({
+    const next = {
       prev: el.scrollLeft > eps,
       next: el.scrollLeft < el.scrollWidth - el.clientWidth - eps,
-    });
+    };
+    setCarouselState((cur) => (cur.prev === next.prev && cur.next === next.next ? cur : next));
   };
 
   // Um "page" = largura visível do carrossel (rolagem estilo galeria do Instagram).
