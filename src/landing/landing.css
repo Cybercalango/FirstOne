@@ -166,19 +166,16 @@
 @media (max-width: 700px) {
  .page-width { padding-inline: 20px; }
  .announcement { font-size: 10px; height: 32px; letter-spacing: .5px; padding-inline: 12px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
- /* HEADER MOBILE: logo à esquerda + UMA única ação à direita (☰). As antigas
-    ações Buscar/Favoritos/"Fale com a gente" saem da barra e passam para o
-    menu lateral — a parte superior fica limpa, sem régua de botões. */
+ /* HEADER MOBILE: logo à esquerda + DOIS botões à direita (☰ e WhatsApp).
+    Buscar/Favoritos ficam apenas no menu lateral (drawer). */
  .site-header { height: 64px; grid-template-columns: minmax(0,1fr) auto; gap: 10px; }
  .logo-link { width: 84px; height: 56px; }
  .desktop-nav { display: none; }
  .nav-toggle { display: inline-flex; }
- .header-actions { gap: 0; flex-wrap: nowrap; }
- .header-actions button { width: 44px; height: 44px; }
+ .header-actions { gap: 8px; flex-wrap: nowrap; }
  .header-actions svg { width: 21px; height: 21px; }
  .header-actions .btn-search-mobile,
  .header-actions .favorite-counter { display: none !important; }
- .contact-header { display: none !important; }
  .favorite-counter span { top: 4px; right: 4px; width: 15px; height: 15px; font-size: 9px; }
  .hero-copy h1 { font-size: 11px; margin-top: 20px; }
  .desktop-break { display: none; }
@@ -320,5 +317,38 @@
      duplicado + seletor com escopo .landing-root, ela reaparecia. */
   .landing-root .catalog-controls .category-tabs,
   .landing-root .category-tabs { display: none !important; }
+
+  /* BARRA SUPERIOR MOBILE: logo + exatamente DOIS botões ajustáveis à largura:
+     [☰ três linhas] e [logo WhatsApp]. Buscar/Favoritos continuam apenas no
+     drawer; "Fale com a gente" sai do texto e vira o ícone verde do WhatsApp. */
+  .landing-root .site-header { grid-template-columns: minmax(0,1fr) auto; height: 64px; }
+  .landing-root .header-actions { display: flex; gap: 8px; flex-wrap: nowrap; align-items: center; }
+  .landing-root .header-actions .btn-search-mobile,
+  .landing-root .header-actions .favorite-counter { display: none !important; }
+  .landing-root .header-actions button.nav-toggle,
+  .landing-root .header-actions .btn-ghost.nav-toggle {
+    display: inline-flex !important;
+    width: auto !important; min-width: 48px !important; height: 48px !important;
+    padding: 0 12px !important; border-radius: 14px !important;
+    background: transparent !important; box-shadow: none !important;
+    color: var(--theme-primary) !important;
+  }
+  .landing-root .nav-toggle .icon-menu { width: 26px; height: 26px; stroke: currentColor; }
+  .landing-root .nav-toggle .menu-label { display: none; }
+  /* Botão "Fale com a gente" no mobile = botão redondo de logo do WhatsApp:
+     o SVG já é o círculo verde completo, então o fundo do botão fica neutro
+     (não compete com a logo) e a logo preenche quase todo o alvo de toque. */
+  .landing-root .header-actions button.contact-header,
+  .landing-root .header-actions .btn-outline.contact-header {
+    display: inline-flex !important;
+    width: 48px !important; height: 48px !important;
+    min-width: 48px !important; padding: 0 !important;
+    border-radius: 50% !important;
+    justify-content: center; align-items: center;
+    background: transparent !important; border-color: transparent !important;
+    box-shadow: none !important;
+  }
+  .landing-root .contact-header .icon-whatsapp { width: 44px; height: 44px; display: block; }
+  .landing-root .contact-header .contact-label { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
