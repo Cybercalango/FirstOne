@@ -66,6 +66,16 @@
   .landing-root .product-heart {
     padding-inline: 0 !important;
   }
+
+  /* coração do card no mobile: circula como chip pequeno ANTES do "Ver joia"
+     (ordem DOM: ♥ então CTA — ver rodapé em Landing.jsx). landing.css cuida
+     de position/aspect-ratio; aqui só tamanho/cor, sem !important. */
+  .landing-root .product-heart {
+    width: 32px !important;
+    height: 32px !important;
+    min-width: 32px !important;
+    color: var(--theme-primary, var(--primary));
+  }
 }
 .landing-root .btn-link {
   background: transparent !important;
