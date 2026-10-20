@@ -335,15 +335,20 @@
   }
   .landing-root .nav-toggle .icon-menu { width: 26px; height: 26px; stroke: currentColor; }
   .landing-root .nav-toggle .menu-label { display: none; }
+  /* Botão "Fale com a gente" no mobile = botão redondo de logo do WhatsApp:
+     o SVG já é o círculo verde completo, então o fundo do botão fica neutro
+     (não compete com a logo) e a logo preenche quase todo o alvo de toque. */
   .landing-root .header-actions button.contact-header,
   .landing-root .header-actions .btn-outline.contact-header {
     display: inline-flex !important;
-    width: auto !important; min-width: 48px !important; height: 48px !important;
-    padding: 0 10px !important; border-radius: 14px !important;
-    background: #25D366 !important; border-color: #25D366 !important;
-    box-shadow: 0 6px 16px rgba(37,211,102,.32) !important;
+    width: 48px !important; height: 48px !important;
+    min-width: 48px !important; padding: 0 !important;
+    border-radius: 50% !important;
+    justify-content: center; align-items: center;
+    background: transparent !important; border-color: transparent !important;
+    box-shadow: none !important;
   }
-  .landing-root .contact-header .icon-whatsapp { width: 26px; height: 26px; display: block; }
+  .landing-root .contact-header .icon-whatsapp { width: 44px; height: 44px; display: block; }
   .landing-root .contact-header .contact-label { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
