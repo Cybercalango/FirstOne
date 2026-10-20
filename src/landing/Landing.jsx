@@ -113,10 +113,14 @@ function Landing() {
     if (el) el.scrollBy({ left: dir * el.clientWidth, behavior: 'smooth' });
   };
 
-  useEffect(() => {
-    updateCarouselArrows();
-  }, [products, visible.length]);
-
+  // POSTMORTEM (tela branca, 2026-10-20): este efeito ficava ANTES do useMemo
+  // `visible` e referenciava `visible.length` no array de dependências. Como
+  // const não é içada (TDZ), ao montar o componente a avaliação de
+  // `[products, visible.length]` acessava `visible` antes da inicialização →
+  // ReferenceError "Cannot access 're' before initialization" (nome minificado
+  // pelo esbuild) derrubando todo o render na hora. Regra: NADA que use
+  // `visible` pode ser declarado/avaliado antes do useMemo abaixo — por isso
+  // este efeito agora fica depois dele (ver logo após `const visible = ...`).
   useEffect(() => {
     let alive = true;
     getEmpresa().then((e) => { if (alive) setWhatsapp(String(e?.whatsapp || '').replace(/\D/g, '')); });
@@ -156,6 +160,12 @@ function Landing() {
     if (sort === 'name') list.sort((a, b) => a.name.localeCompare(b.name));
     return list;
   }, [products, category, favoritesOnly, favorites, query, sort]);
+
+  // Atualiza ‹ › quando o conjunto visível muda (carregamento, filtro, busca).
+  // DECLARADO DEPOIS de `visible` — ver postmortem do TDZ acima.
+  useEffect(() => {
+    updateCarouselArrows();
+  }, [products, visible.length]);
 
   return (
     <div className="landing-root">
