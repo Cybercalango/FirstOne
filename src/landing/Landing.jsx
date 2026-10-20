@@ -280,8 +280,16 @@ function Landing() {
                     {product.imageUrl
                       ? <img src={product.imageUrl} alt={product.name} width={512} height={512} loading="lazy" />
                       : <span className="product-photo-empty"><Gem size={40} /></span>}
-                    {product.tag && <span className="product-tag">{product.tag}</span>}
-                    {!product.available && <span className="product-tag product-tag-unavailable">Indisponível</span>}
+                    {/* Badges e coração são overlays da foto APENAS no desktop.
+                        No mobile (≤700px) eles saem do crop via CSS (position:static,
+                        ordem flex redefinida) porque a foto é pequena demais e os
+                        chips cobriam a joia — ver .product-photo-overlay em landing.css */}
+                    {(product.tag || !product.available) && (
+                      <span className="product-photo-overlay">
+                        {product.tag && <span className="product-tag">{product.tag}</span>}
+                        {!product.available && <span className="product-tag product-tag-unavailable">Indisponível</span>}
+                      </span>
+                    )}
                   </a>
                   <div className="product-info">
                     <span className="product-category">{product.category} · Joia folheada</span>
@@ -291,11 +299,16 @@ function Landing() {
                       {product.price != null && <span className="product-price">{formatPrice(product.price)}</span>}
                       {!product.available && <span className="product-unavailable">Esgotado</span>}
                     </div>
+                    {/* rodapé do card: no mobile (flex-wrap em .product-info) o
+                        coração fica à esquerda e "Ver joia" preenche o resto —
+                        assim ♥/badges nunca sobrepoem a foto pequena; no desktop
+                        o coração é absolute sobre o canto da foto e só o CTA
+                        aparece nesta linha */}
+                    <Button className="product-heart" size="icon" variant="ghost" aria-label={`${favorites.includes(product.id) ? 'Remover' : 'Adicionar'} ${product.name} das favoritas`} onClick={() => toggleFavorite(product.id)}>
+                      <Heart size={18} fill={favorites.includes(product.id) ? 'currentColor' : 'none'} />
+                    </Button>
                     <Button variant="outline" className="product-cta" onClick={() => setSelected(product)}>Ver joia <ArrowRight size={14} /></Button>
                   </div>
-                  <Button className="product-heart" size="icon" variant="ghost" aria-label={`${favorites.includes(product.id) ? 'Remover' : 'Adicionar'} ${product.name} das favoritas`} onClick={() => toggleFavorite(product.id)}>
-                    <Heart size={18} fill={favorites.includes(product.id) ? 'currentColor' : 'none'} />
-                  </Button>
                 </article>
               ))}
             </div>
