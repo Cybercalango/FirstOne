@@ -169,28 +169,36 @@ export default function Landing() {
           {loadError && <div className="empty-state"><h3>Opa!</h3><p>Não foi possível carregar o catálogo agora ({loadError}). Tente novamente em instantes.</p></div>}
           <div className="product-grid">
             {products && visible.map((product) => (
+              /* Card do catálogo — refeito para legibilidade (desktop e mobile):
+                 - foto em proporção 4:5 com object-fit:contain → a joia inteira aparece,
+                   nada é cortado pelo crop (causa nº 1 de "não dá pra ver a imagem");
+                 - nome com até 2 linhas + descrição com 1 linha (antes não havia
+                   descrição nenhuma no card);
+                 - preço destacado ao lado do nome (fonte maior, antes era miúda);
+                 - ações viram UM botão por card ("Ver joia") em largura total — os
+                   dois links de texto sublinhado ("Conhecer a joia"/"Comprar") eram
+                   ilegíveis e disputavam espaço. */
               <article className="product" key={product.id}>
-                <div className="product-photo">
-                  <a href={`#${product.id}`} onClick={(e) => { e.preventDefault(); setSelected(product); }} aria-label={`Ver ${product.name}`}>
-                    {product.imageUrl
-                      ? <img src={product.imageUrl} alt={product.name} width={512} height={512} loading="lazy" />
-                      : <span className="flex h-full w-full items-center justify-center"><Gem size={40} className="text-muted-foreground" /></span>}
-                  </a>
+                <a className="product-photo" href={`#${product.id}`} onClick={(e) => { e.preventDefault(); setSelected(product); }} aria-label={`Ver ${product.name}`}>
+                  {product.imageUrl
+                    ? <img src={product.imageUrl} alt={product.name} width={512} height={512} loading="lazy" />
+                    : <span className="product-photo-empty"><Gem size={40} /></span>}
                   {product.tag && <span className="product-tag">{product.tag}</span>}
-                  {!product.available && <span className="product-tag">Indisponível</span>}
-                  <Button className="product-heart" size="icon" variant="ghost" aria-label={`${favorites.includes(product.id) ? 'Remover' : 'Adicionar'} ${product.name} das favoritas`} onClick={() => toggleFavorite(product.id)}>
-                    <Heart size={18} fill={favorites.includes(product.id) ? 'currentColor' : 'none'} />
-                  </Button>
-                </div>
+                  {!product.available && <span className="product-tag product-tag-unavailable">Indisponível</span>}
+                </a>
                 <div className="product-info">
-                  <span>{product.category} · Joia folheada</span>
-                  <h3>{product.name}</h3>
-                  {product.price != null && <span className="font-semibold text-primary">{formatPrice(product.price)}</span>}
-                  <Button variant="link" onClick={() => setSelected(product)}>Conhecer a joia <ArrowRight size={14} /></Button>
-                  {product.available && product.buyLink && (
-                    <Button variant="link" asChild className="product-buy-link"><a href={product.buyLink} target="_blank" rel="noreferrer">Comprar <ShoppingBag size={14} /></a></Button>
-                  )}
+                  <span className="product-category">{product.category} · Joia folheada</span>
+                  <h3 className="product-name">{product.name}</h3>
+                  {product.description && <p className="product-desc">{product.description}</p>}
+                  <div className="product-meta">
+                    {product.price != null && <span className="product-price">{formatPrice(product.price)}</span>}
+                    {!product.available && <span className="product-unavailable">Esgotado</span>}
+                  </div>
+                  <Button variant="outline" className="product-cta" onClick={() => setSelected(product)}>Ver joia <ArrowRight size={14} /></Button>
                 </div>
+                <Button className="product-heart" size="icon" variant="ghost" aria-label={`${favorites.includes(product.id) ? 'Remover' : 'Adicionar'} ${product.name} das favoritas`} onClick={() => toggleFavorite(product.id)}>
+                  <Heart size={18} fill={favorites.includes(product.id) ? 'currentColor' : 'none'} />
+                </Button>
               </article>
             ))}
           </div>
