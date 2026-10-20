@@ -107,10 +107,37 @@
    - nome 16px (era 14px), categoria 11px (era 9px), preço 16px bold (era ~10px
    herdado) — hierarquia real de leitura;
    - um único CTA "Ver joia" por card no lugar de dois links de texto miúdos. */
-.landing-root .product-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 26px; }
+/* CATÁLOGO = CARROSSEL estilo Instagram (scroll-snap por página):
+   - .product-carousel quebra o grid e vira container do track rolável;
+   - cada card ocupa 1/4 da página no desktop (4 peças visíveis) e ~32,5%
+     no mobile (3 peças — cards ~20% mais largos que as 2 colunas de antes);
+   - foto quadrada → card mais BAIXO na vertical (era 4:5);
+   - barra de rolagem oculta; setas ‹ › + arrasto/swipe navegam. */
+.landing-root .product-carousel { display: block; }
+.landing-root .product-track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: min(300px, calc((100% - 3 * 20px) / 4)); /* 4 peças/página no desktop */
+  gap: 20px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 2px;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;           /* Firefox */
+  padding: 4px 2px 10px;           /* respiro p/ a sombra do hover */
+}
+.landing-root .product-track::-webkit-scrollbar { display: none; }
+.landing-root .product { scroll-snap-align: start; }
+.landing-root .carousel-controls { display: flex; align-items: center; justify-content: center; gap: 16px; margin-top: 6px; }
+.landing-root .carousel-arrow[disabled] { opacity: .35; pointer-events: none; }
+.landing-root .carousel-arrow.btn-icon { width: 40px; height: 40px; min-width: 40px; min-height: 40px; padding-inline: 0; }
+.landing-root .carousel-hint { font-size: 11px; letter-spacing: .8px; text-transform: uppercase; color: var(--muted-foreground); }
+.landing-root .product-track:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; border-radius: 12px; }
+@media (prefers-reduced-motion: no-preference) { .landing-root .product-track { scroll-behavior: smooth; } }
 .landing-root .product { position: relative; display: flex; flex-direction: column; background: var(--background); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; transition: box-shadow 200ms ease, transform 200ms ease; }
 .landing-root .product:hover { box-shadow: 0 12px 30px rgba(0,0,0,.08); transform: translateY(-2px); }
-.landing-root .product-photo { display: block; position: relative; background: var(--photo-background); aspect-ratio: 4 / 5; -webkit-tap-highlight-color: transparent; }
+.landing-root .product-photo { display: block; position: relative; background: var(--photo-background); aspect-ratio: 1 / 1; -webkit-tap-highlight-color: transparent; } /* desktop: foto quadrada → card mais baixo na vertical */
 .landing-root .product-photo img { width: 100%; height: 100%; object-fit: contain; object-position: center; transition: transform 500ms ease; }
 .landing-root .product-photo:hover img { transform: scale(1.03); }
 .landing-root .product-photo-empty { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; color: var(--muted-foreground); }
@@ -175,8 +202,8 @@
  .hero-copy h1 > span { font-size: 56px; }
  .catalog-heading h2 { font-size: 32px; }
  .category-tab { padding-inline: 15px; font-size: 10px; }
- /* ≤1100px: duas colunas de cards verticais (a base já é repeat(3)) */
- .product-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 22px 18px; }
+ /* ≤1100px: carrossel com 3 peças na página (era grid de 2 colunas) */
+ .landing-root .product-track { grid-auto-columns: min(340px, calc((100% - 2 * 18px) / 3)); gap: 18px; }
 }
 @media (max-width: 700px) {
  .page-width { padding-inline: 20px; }
@@ -215,13 +242,14 @@
  .search-row label { max-width: none; min-height: 46px; }
  .search-row input { font-size: 16px; padding: 11px 0; }
  .product-tag { font-size: 10px; top: 8px; left: 8px; padding: 5px 8px; }
- /* tipografia mobile do card: nada abaixo de 12px (as fontes 9-10px do
-    desktop eram a causa da "ruim de ler") */
- .product-category { font-size: 11px; }
- .product-name { font-size: 16px; }
- .product-desc { font-size: 13px; -webkit-line-clamp: 2; }
- .product-price { font-size: 17px; }
- .product-info { padding: 12px 14px 14px; }
+ /* tipografia mobile do card — ENCURTADA conforme pedido (nome e preço);
+    mantém-se legível (≥12px) dentro dos cards mais estreitos do carrossel */
+ .product-category { font-size: 10px; }
+ .product-name { font-size: 13.5px; }
+ .product-desc { font-size: 12px; -webkit-line-clamp: 1; }
+ .product-price { font-size: 14px; }
+ .product-info { padding: 10px 12px 12px; gap: 3px; }
+ .product-cta { height: 36px; font-size: 12px; }
  .empty-state { padding: 44px 16px; }
  .empty-state h3 { font-size: 26px; }
  .empty-state p { font-size: 13px; }
@@ -280,14 +308,17 @@
     menu lateral (drawer), empilhadas e legíveis. Não há mais botões rígidos
     com scroll horizontal em lugar nenhum da landing mobile. */
 
- /* CATÁLOGO MOBILE: cards verticais em DUAS colunas — foto 4:5 com a joia
-    inteira (contain), nome 16px, preço destacado e um único CTA por card.
-    (Antes: linha com foto de 116px cortada por cover + fontes de 9-12px.) */
- .product-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px 12px; }
+ /* CATÁLOGO MOBILE: carrossel com TRÊS peças na página — cards ~20% mais
+    largos que as 2 colunas anteriores, foto quadrada (card mais baixo) e
+    tipografia reduzida (nome/preço) para caber sem cortes. */
+ .landing-root .product-track { grid-auto-columns: calc((100% - 2 * 12px) / 3); gap: 12px; }
  .landing-root .product { display: flex; }
- .product-photo { aspect-ratio: 4 / 5; height: auto; min-height: 0; border-radius: 0; }
- .product-heart { right: 4px; top: 4px; width: 40px; height: 40px; min-width: 40px; min-height: 40px; }
- .product-cta { height: 44px; font-size: 13px; } /* alvo de toque ≥44px */
+ .product-photo { aspect-ratio: 1 / 1; height: auto; min-height: 0; border-radius: 0; }
+ .product-heart { right: 4px; top: 4px; width: 36px; height: 36px; min-width: 36px; min-height: 36px; }
+ .product-cta { height: 36px; font-size: 12px; }
+ /* controles do carrossel no mobile: setas de 44px (alvo de toque) */
+ .landing-root .carousel-controls { gap: 10px; margin-top: 2px; }
+ .landing-root .carousel-arrow { width: 44px; height: 44px; min-width: 44px; min-height: 44px; }
 
  /* VALUES-STRIP: carrossel horizontal com "scroll-snap" no celular
     (em telas ≥700px continua sendo a faixa de 3 colunas do desktop) */
@@ -303,13 +334,14 @@
  .site-footer { display: block; text-align: center; padding-block: 30px; }
  .site-footer a { display: inline-block; padding: 10px 14px; }
 }
-/* Telas pequenas (≤380px): coluna única — cards grandes e legíveis em 320-360px */
+/* Telas pequenas (≤380px): duas peças na página do carrossel — cards voltam a
+   ter largura confortável de leitura em 320-360px */
 @media (max-width: 380px) {
- .product-grid { grid-template-columns: minmax(0,1fr); gap: 16px; }
+ .landing-root .product-track { grid-auto-columns: calc((100% - 12px) / 2); }
 }
-/* Tablets pequenos (521–700px): três colunas de cards verticais (espaço sobrando) */
+/* Tablets pequenos (521–700px): quatro peças na página (cards ainda folgados) */
 @media (min-width: 521px) and (max-width: 700px) {
- .product-grid { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 18px 14px; }
+ .landing-root .product-track { grid-auto-columns: calc((100% - 3 * 12px) / 4); gap: 12px; }
 }
 /* Hover apenas onde existe mouse — evita "grudar" estado hover ao tocar no celular */
 @media (hover: none) { .product-photo:hover img { transform: none; } }

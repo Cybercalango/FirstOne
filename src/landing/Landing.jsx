@@ -4,7 +4,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowRight, Heart, Search, Sparkles, Gift, Gem, X, SlidersHorizontal,
+  ArrowRight, ChevronLeft, ChevronRight, Heart, Search, Sparkles, Gift, Gem, X, SlidersHorizontal,
   MessageCircle, ShoppingBag, Loader2,
 } from 'lucide-react';
 import { Button, Dialog, DialogContent, DialogTitle, DialogDescription } from './ui';
@@ -40,6 +40,30 @@ export default function Landing() {
   // antigo (abre o diálogo de contato).
   const [whatsapp, setWhatsapp] = useState('');
   const catalog = useRef(null);
+  // Carrossel do catálogo (estilo Instagram): track com scroll-snap + botões ‹ ›.
+  const carouselRef = useRef(null);
+  const [carouselState, setCarouselState] = useState({ prev: false, next: false });
+
+  // Recalcula se há cards antes/depois da posição atual do scroll (p/ habilitar ‹ ›).
+  const updateCarouselArrows = () => {
+    const el = carouselRef.current;
+    if (!el) return;
+    const eps = 4;
+    setCarouselState({
+      prev: el.scrollLeft > eps,
+      next: el.scrollLeft < el.scrollWidth - el.clientWidth - eps,
+    });
+  };
+
+  // Um "page" = largura visível do carrossel (rolagem estilo galeria do Instagram).
+  const scrollCarousel = (dir) => {
+    const el = carouselRef.current;
+    if (el) el.scrollBy({ left: dir * el.clientWidth, behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    updateCarouselArrows();
+  }, [products, visible.length]);
 
   useEffect(() => {
     let alive = true;
@@ -167,40 +191,59 @@ export default function Landing() {
           <div className="catalog-count">{products === null ? 'Carregando…' : `${visible.length} joias${favoritesOnly ? ' favoritas' : ' na seleção'}`}</div>
           {products === null && <div className="empty-state"><Loader2 className="animate-spin" /><h3>Carregando coleção…</h3></div>}
           {loadError && <div className="empty-state"><h3>Opa!</h3><p>Não foi possível carregar o catálogo agora ({loadError}). Tente novamente em instantes.</p></div>}
-          <div className="product-grid">
-            {products && visible.map((product) => (
-              /* Card do catálogo — refeito para legibilidade (desktop e mobile):
-                 - foto em proporção 4:5 com object-fit:contain → a joia inteira aparece,
-                   nada é cortado pelo crop (causa nº 1 de "não dá pra ver a imagem");
-                 - nome com até 2 linhas + descrição com 1 linha (antes não havia
-                   descrição nenhuma no card);
-                 - preço destacado ao lado do nome (fonte maior, antes era miúda);
-                 - ações viram UM botão por card ("Ver joia") em largura total — os
-                   dois links de texto sublinhado ("Conhecer a joia"/"Comprar") eram
-                   ilegíveis e disputavam espaço. */
-              <article className="product" key={product.id}>
-                <a className="product-photo" href={`#${product.id}`} onClick={(e) => { e.preventDefault(); setSelected(product); }} aria-label={`Ver ${product.name}`}>
-                  {product.imageUrl
-                    ? <img src={product.imageUrl} alt={product.name} width={512} height={512} loading="lazy" />
-                    : <span className="product-photo-empty"><Gem size={40} /></span>}
-                  {product.tag && <span className="product-tag">{product.tag}</span>}
-                  {!product.available && <span className="product-tag product-tag-unavailable">Indisponível</span>}
-                </a>
-                <div className="product-info">
-                  <span className="product-category">{product.category} · Joia folheada</span>
-                  <h3 className="product-name">{product.name}</h3>
-                  {product.description && <p className="product-desc">{product.description}</p>}
-                  <div className="product-meta">
-                    {product.price != null && <span className="product-price">{formatPrice(product.price)}</span>}
-                    {!product.available && <span className="product-unavailable">Esgotado</span>}
+          {/* CATÁLOGO = CARROSSEL estilo Instagram (desktop e mobile):
+              - track com scroll-snap por "página" (largura visível);
+              - 4 peças na página no desktop / 3 no mobile (CSS);
+              - setas ‹ › abaixo do carrossel + swipe/toque-arrasto natural;
+              - barra de rolagem oculta — o arrasto horizontal é o gesto padrão. */}
+          <div className="product-carousel">
+            <div
+              className="product-track"
+              ref={carouselRef}
+              onScroll={updateCarouselArrows}
+              role="group"
+              aria-label="Catálogo em carrossel — deslize para ver mais joias"
+              tabIndex={0}
+            >
+              {products && visible.map((product) => (
+                /* Card do catálogo — legibilidade desktop e mobile:
+                   - foto quadrada com object-fit:contain → a joia inteira aparece,
+                     nada é cortado pelo crop; fundo neutro mantém o bloco harmônico;
+                   - nome com até 2 linhas + descrição (antes não havia descrição
+                     nenhuma no card);
+                   - preço destacado ao lado do nome;
+                   - ações viram UM botão por card ("Ver joia") em largura total. */
+                <article className="product" key={product.id}>
+                  <a className="product-photo" href={`#${product.id}`} onClick={(e) => { e.preventDefault(); setSelected(product); }} aria-label={`Ver ${product.name}`}>
+                    {product.imageUrl
+                      ? <img src={product.imageUrl} alt={product.name} width={512} height={512} loading="lazy" />
+                      : <span className="product-photo-empty"><Gem size={40} /></span>}
+                    {product.tag && <span className="product-tag">{product.tag}</span>}
+                    {!product.available && <span className="product-tag product-tag-unavailable">Indisponível</span>}
+                  </a>
+                  <div className="product-info">
+                    <span className="product-category">{product.category} · Joia folheada</span>
+                    <h3 className="product-name">{product.name}</h3>
+                    {product.description && <p className="product-desc">{product.description}</p>}
+                    <div className="product-meta">
+                      {product.price != null && <span className="product-price">{formatPrice(product.price)}</span>}
+                      {!product.available && <span className="product-unavailable">Esgotado</span>}
+                    </div>
+                    <Button variant="outline" className="product-cta" onClick={() => setSelected(product)}>Ver joia <ArrowRight size={14} /></Button>
                   </div>
-                  <Button variant="outline" className="product-cta" onClick={() => setSelected(product)}>Ver joia <ArrowRight size={14} /></Button>
-                </div>
-                <Button className="product-heart" size="icon" variant="ghost" aria-label={`${favorites.includes(product.id) ? 'Remover' : 'Adicionar'} ${product.name} das favoritas`} onClick={() => toggleFavorite(product.id)}>
-                  <Heart size={18} fill={favorites.includes(product.id) ? 'currentColor' : 'none'} />
-                </Button>
-              </article>
-            ))}
+                  <Button className="product-heart" size="icon" variant="ghost" aria-label={`${favorites.includes(product.id) ? 'Remover' : 'Adicionar'} ${product.name} das favoritas`} onClick={() => toggleFavorite(product.id)}>
+                    <Heart size={18} fill={favorites.includes(product.id) ? 'currentColor' : 'none'} />
+                  </Button>
+                </article>
+              ))}
+            </div>
+            {products && visible.length > 0 && (
+              <div className="carousel-controls">
+                <Button variant="outline" size="icon" className="carousel-arrow" aria-label="Joias anteriores" disabled={!carouselState.prev} onClick={() => scrollCarousel(-1)}><ChevronLeft size={18} /></Button>
+                <span className="carousel-hint">Arraste ou use as setas</span>
+                <Button variant="outline" size="icon" className="carousel-arrow" aria-label="Próximas joias" disabled={!carouselState.next} onClick={() => scrollCarousel(1)}><ChevronRight size={18} /></Button>
+              </div>
+            )}
           </div>
           {products && visible.length === 0 && !loadError && (
             <div className="empty-state"><Gem /><h3>Nenhuma joia por aqui ainda</h3><p>{favoritesOnly ? 'Suas joias favoritas vão aparecer aqui.' : 'Experimente outro nome ou categoria.'}</p>
