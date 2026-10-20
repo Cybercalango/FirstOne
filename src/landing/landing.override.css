@@ -46,13 +46,13 @@
    Desktop (>700px) permanece intocado com o min-width:120px original. */
 @media (max-width: 700px) {
   /* FORÇA bruta com origem mais alta que qualquer regra de landing.css,
-     independentemente da ordem dos arquivos no bundle: no celular só existe
-     UM botão na barra superior (o ☰) e NENHUMA régua horizontal de categorias.
-     Foi isso o que faltou nas tentativas anteriores — a régua reaparecia por
-     conflito de especificidade entre os dois CSS. */
-  .landing-root .header-actions .btn-ghost:not(.nav-toggle),
+     independentemente da ordem dos arquivos no bundle. No celular a barra
+     superior tem SOMENTE dois botões: ☰ e WhatsApp — por isso as regras
+     .nav-toggle/.contact-header do fim de landing.css usam display:inline-flex
+     !important e esta lista de ocultação NÃO os inclui mais. */
+  .landing-root .header-actions .btn-search-mobile,
   .landing-root .header-actions .favorite-counter,
-  .landing-root .contact-header { display: none !important; }
+  .landing-root .desktop-nav { display: none !important; }
   .landing-root .category-tabs { display: none !important; }
 
   .landing-root .btn,

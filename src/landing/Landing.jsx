@@ -5,9 +5,11 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight, Heart, Search, Sparkles, Gift, Gem, X, SlidersHorizontal,
-  MessageCircle, ShoppingBag, Menu, Loader2,
+  MessageCircle, ShoppingBag, Loader2,
 } from 'lucide-react';
 import { Button, Dialog, DialogContent, DialogTitle, DialogDescription } from './ui';
+import { WhatsAppGlyph } from './whatsappSvg';
+import { getEmpresa } from '../utils/empresa';
 import logo from './assets/flor-da-pele-logo.png';
 import editorial from './assets/jewelry-editorial.jpg';
 import { listProducts, categories as baseCategories, formatPrice } from './catalog';
@@ -43,8 +45,26 @@ export default function Landing() {
   const [contact, setContact] = useState(false);
   const [sort, setSort] = useState('featured');
   const [menu, setMenu] = useState(false);
+  // Número de WhatsApp da empresa (Cadastros Base → Empresa). Enquanto não
+  // houver número configurado, "Fale com a gente" mantém o comportamento
+  // antigo (abre o diálogo de contato).
+  const [whatsapp, setWhatsapp] = useState('');
   const catalog = useRef(null);
   const isMobile = useIsMobile();
+
+  useEffect(() => {
+    let alive = true;
+    getEmpresa().then((e) => { if (alive) setWhatsapp(String(e?.whatsapp || '').replace(/\D/g, '')); });
+    return () => { alive = false; };
+  }, []);
+
+  const waHref = whatsapp
+    ? `https://wa.me/55${whatsapp.replace(/^55/, '')}`
+    : '';
+  const abrirContato = () => {
+    if (waHref) window.open(waHref, '_blank', 'noopener');
+    else setContact(true);
+  };
 
   useEffect(() => {
     let alive = true;
@@ -95,8 +115,19 @@ export default function Landing() {
           <Button variant="ghost" size="icon" aria-label="Ver favoritas" title="Ver favoritas" className="favorite-counter" onClick={() => { setFavoritesOnly(!favoritesOnly); scrollToCatalog(); }}>
             <Heart fill={favoritesOnly ? 'currentColor' : 'none'} />{favorites.length > 0 && <span>{favorites.length}</span>}
           </Button>
-          <Button variant="ghost" size="icon" className="nav-toggle" aria-label="Abrir menu" onClick={() => setMenu(true)}><Menu /></Button>
-          <Button variant="outline" className="contact-header" onClick={() => setContact(true)}><MessageCircle /> Fale com a gente</Button>
+          <Button variant="ghost" className="nav-toggle" aria-label="Abrir menu" title="Menu" onClick={() => setMenu(true)}>
+            <svg className="icon-menu" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true" focusable="false">
+              <path d="M3.5 6h17M3.5 12h17M3.5 18h17" />
+            </svg>
+            <span className="menu-label">Menu</span>
+          </Button>
+          {/* "Fale com a gente": no MOBILE o texto é substituído pela logo do
+              WhatsApp (SVG inline — sempre aparece, sem depender de arquivo);
+              no DESKTOP continua o botão com ícone + texto. */}
+          <Button variant="outline" className="contact-header" title="Fale com a gente" onClick={abrirContato}>
+            <WhatsAppGlyph size={22} />
+            <span className="contact-label"><MessageCircle size={16} /> Fale com a gente</span>
+          </Button>
         </div>
       </header>
       <main>
